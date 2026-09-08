@@ -15,6 +15,7 @@ import {
   FIELD_CONFIGS,
   along,
   bases as baseCoords,
+  dist,
   normalize,
   scale,
   sub,
@@ -77,7 +78,11 @@ function catcherBackupPoint(ctx: Ctx, base: BaseId): Point {
 
 /** Standing a step off the bag, on the side the throw is coming from. */
 function coverPoint(ctx: Ctx, base: BaseId, from: Point): Point {
-  return along(ctx.bags[base], from, 4 * ctx.u);
+  const bag = ctx.bags[base];
+  const step = 4 * ctx.u;
+  // Unless the throw is coming from right on top of the bag — then take it
+  // from the far side, so he has somewhere to toss it and nobody collides.
+  return dist(bag, from) < 12 * ctx.u ? along(bag, from, -step) : along(bag, from, step);
 }
 
 // --- layer 1: who has the ball -------------------------------------------
@@ -156,52 +161,52 @@ function layerCutoffRelay(ctx: Ctx) {
 // --- layer 4: base coverage ----------------------------------------------
 
 /**
- * First base: normally the first baseman, but he is the one fielder who is
- * regularly pulled off it — by the ball, or by a posture that has him charging.
+ * Coverage is expressed as an order of preference, not a single name. The
+ * preferred man is regularly already busy — he fielded the ball, or a posture
+ * moved him — and a base that takes a throw always needs somebody on it.
  */
-function coverFirst(ctx: Ctx): { who: Position; why: string; ruleId: string } {
+function coverCandidates(ctx: Ctx, base: BaseId): { order: Position[]; why: string; ruleId: string } {
   const { posture } = ctx.input.situation;
-  const charging = posture === 'cornersIn' || posture === 'infieldIn';
+  // Only bunt defence pulls the first baseman off the bag for good. With the
+  // infield merely drawn in he is shallow, not charging, and still takes the
+  // throw himself.
+  const charging = posture === 'cornersIn';
 
-  if (ctx.primary === '1B')
-    return { who: 'P', why: 'First baseman fielded it — pitcher covers the bag.', ruleId: 'cover.first.pitcher' };
+  if (base === 'first') {
+    if (ctx.primary === '1B')
+      return { order: ['P', '2B'], why: 'First baseman fielded it — pitcher covers the bag.', ruleId: 'cover.first.pitcher' };
+    if (charging && isInfieldBand(ctx.zone.band))
+      return { order: ['2B', '1B', 'P'], why: 'First baseman is charging — second baseman takes the bag.', ruleId: 'cover.first.second' };
+    return { order: ['1B', 'P', '2B'], why: 'Takes the throw at first.', ruleId: 'cover.first' };
+  }
 
-  if (charging && isInfieldBand(ctx.zone.band))
-    return { who: '2B', why: 'First baseman is charging — second baseman takes the bag.', ruleId: 'cover.first.second' };
+  if (base === 'second') {
+    // The middle infielder away from the ball; the other one is going to it.
+    const toLeftSide = ctx.zone.theta <= 0;
+    return {
+      order: toLeftSide ? ['2B', 'SS', 'P'] : ['SS', '2B', 'P'],
+      why: `Ball is to the ${toLeftSide ? 'left' : 'right'} side — the middle infielder away from it covers second.`,
+      ruleId: 'cover.second',
+    };
+  }
 
-  return { who: '1B', why: 'First baseman takes the throw.', ruleId: 'cover.first' };
+  if (base === 'third')
+    return { order: ['3B', 'SS', 'P'], why: 'Covers third.', ruleId: 'cover.third' };
+
+  return { order: ['C', 'P', '1B'], why: 'Covers the plate.', ruleId: 'cover.home' };
 }
 
-/** Second base: the middle infielder away from the ball. */
-function coverSecond(ctx: Ctx): { who: Position; why: string; ruleId: string } {
-  const toLeftSide = ctx.zone.theta <= 0;
-  const preferred: Position = toLeftSide ? '2B' : 'SS';
-  const other: Position = toLeftSide ? 'SS' : '2B';
-  const who = ctx.out.has(preferred) ? other : preferred;
-  return {
-    who,
-    why: `Ball is to the ${toLeftSide ? 'left' : 'right'} side — the ${who} covers second.`,
-    ruleId: 'cover.second',
-  };
+function assignCover(ctx: Ctx, base: BaseId, from: Point, whyOverride?: string) {
+  const { order, why, ruleId } = coverCandidates(ctx, base);
+  const who = order.find((p) => !ctx.out.has(p)) ?? POSITIONS.find((p) => !ctx.out.has(p));
+  if (!who) return;
+  put(ctx, who, { kind: 'cover', base }, coverPoint(ctx, base, from), whyOverride ?? why, ruleId);
 }
 
 function layerCoverage(ctx: Ctx) {
   for (const t of ctx.throws) {
     const from = ctx.out.get(t.from)?.target ?? ctx.ball;
-
-    if (t.to === 'first') {
-      const { who, why, ruleId } = coverFirst(ctx);
-      put(ctx, who, { kind: 'cover', base: 'first' }, coverPoint(ctx, 'first', from), why, ruleId);
-    } else if (t.to === 'second') {
-      const { who, why, ruleId } = coverSecond(ctx);
-      put(ctx, who, { kind: 'cover', base: 'second' }, coverPoint(ctx, 'second', from), why, ruleId);
-    } else if (t.to === 'third') {
-      const who = ctx.out.has('3B') ? 'SS' : '3B';
-      put(ctx, who, { kind: 'cover', base: 'third' }, coverPoint(ctx, 'third', from), `${who} covers third.`, 'cover.third');
-    } else {
-      const who = ctx.out.has('C') ? 'P' : 'C';
-      put(ctx, who, { kind: 'cover', base: 'home' }, coverPoint(ctx, 'home', from), `${who} covers the plate.`, 'cover.home');
-    }
+    assignCover(ctx, t.to, from);
   }
 
   // Nobody is throwing there, but second base is not left open: if the throw
@@ -211,23 +216,17 @@ function layerCoverage(ctx: Ctx) {
     ctx.throws.some((t) => t.to === 'first') &&
     !ctx.throws.some((t) => t.to === 'second')
   ) {
-    const { who } = coverSecond(ctx);
-    if (!ctx.out.has(who)) {
-      put(
-        ctx,
-        who,
-        { kind: 'cover', base: 'second' },
-        coverPoint(ctx, 'second', ctx.ball),
-        'No play here, but he takes second in case the throw to first gets away.',
-        'cover.second.trailing',
-      );
-    }
+    assignCover(
+      ctx,
+      'second',
+      ctx.ball,
+      'No play here, but he takes second in case the throw to first gets away.',
+    );
   }
 
   // The batter-runner is always headed to first, even with no throw there.
   if (!ctx.throws.some((t) => t.to === 'first') && ctx.throws.length > 0) {
-    const { who, why, ruleId } = coverFirst(ctx);
-    put(ctx, who, { kind: 'cover', base: 'first' }, coverPoint(ctx, 'first', ctx.ball), why, ruleId);
+    assignCover(ctx, 'first', ctx.ball);
   }
 }
 
@@ -245,14 +244,10 @@ const BACKUP_ORDER: Record<BaseId, Position[]> = {
   home: ['P'],
 };
 
-function layerBackups(ctx: Ctx) {
-  const infield = isInfieldBand(ctx.zone.band);
+const OUTFIELDERS: Position[] = ['LF', 'CF', 'RF'];
 
-  /**
-   * Backing up the man with the ball comes first. A throw that gets past a bag
-   * costs a base; a ball that gets past the outfielder costs three, so this
-   * claims its man before the bases do.
-   */
+/** Somebody gets in behind the man with the ball. */
+function backupTheFielder(ctx: Ctx) {
   const primaryAt = ctx.out.get(ctx.primary)?.target ?? ctx.ball;
   const neighbours: Record<Position, Position[]> = {
     LF: ['CF'], RF: ['CF'], CF: ['LF', 'RF'],
@@ -269,21 +264,29 @@ function layerBackups(ctx: Ctx) {
     );
     break;
   }
+}
+
+/** Somebody gets in behind each bag that is taking a throw. */
+function backupTheBases(ctx: Ctx) {
+  const infield = isInfieldBand(ctx.zone.band);
 
   for (const t of ctx.throws) {
     const from = ctx.out.get(t.from)?.target ?? ctx.ball;
 
+    // The catcher genuinely cannot do this one — on a ball to the outfield he
+    // is needed at the plate, so he is excluded outright.
+    const eligible = BACKUP_ORDER[t.to].filter((w) => !(w === 'C' && !infield));
+    // Preferring the outfielder away from the ball is only a preference: if he
+    // is already spoken for, a backed-up bag beats a tidy one.
+    const awkward = (who: Position) =>
+      (who === 'RF' && t.to === 'second' && ctx.zone.theta > 0) ||
+      (who === 'LF' && t.to === 'second' && ctx.zone.theta <= 0);
+    const candidates = [...eligible.filter((w) => !awkward(w)), ...eligible.filter(awkward)];
+
     let taken = 0;
-    for (const who of BACKUP_ORDER[t.to]) {
+    for (const who of candidates) {
       if (taken >= 2) break;
       if (ctx.out.has(who)) continue;
-
-      // The catcher can only trail the runner up the line when the ball stayed
-      // in the infield; on a base hit he stays home.
-      if (who === 'C' && !infield) continue;
-      // The outfielder on the ball side is busy backing up his own man.
-      if (who === 'RF' && t.to === 'second' && ctx.zone.theta > 0) continue;
-      if (who === 'LF' && t.to === 'second' && ctx.zone.theta <= 0) continue;
 
       const why =
         who === 'C'
@@ -295,6 +298,26 @@ function layerBackups(ctx: Ctx) {
       put(ctx, who, { kind: 'backupBase', base: t.to, on: t }, spot, why, `backup.${t.to}`);
       taken++;
     }
+  }
+}
+
+/**
+ * Which of those two comes first depends on who has the ball.
+ *
+ * When an outfielder has it, getting in behind him is the top job — a ball
+ * past him costs three bases, and the bags can make do with whoever is left.
+ * When an infielder has it there is nothing to get past, so the bags win and
+ * the outfielder drifts in behind him only if he is not already spoken for.
+ */
+function layerBackups(ctx: Ctx) {
+  const primaryIsOutfielder = OUTFIELDERS.includes(ctx.primary);
+
+  if (primaryIsOutfielder || ctx.throws.length === 0) {
+    backupTheFielder(ctx);
+    backupTheBases(ctx);
+  } else {
+    backupTheBases(ctx);
+    backupTheFielder(ctx);
   }
 }
 
@@ -331,6 +354,43 @@ function layerRemainder(ctx: Ctx) {
   }
 }
 
+/**
+ * Nine men resolved independently can land on top of each other — most often
+ * when the ball is fielded right beside a bag. Rather than special-case every
+ * such geometry, the least-committed man gives way: a fielder chasing the ball
+ * or standing on a base holds his spot, a backup slides.
+ */
+const ROLE_PRIORITY: Record<Role['kind'], number> = {
+  primary: 0, cover: 1, cutoff: 2, relay: 2, trail: 3, backupBase: 4, backupFielder: 5, watch: 6,
+};
+
+function layerSpacing(ctx: Ctx) {
+  const min = 10 * ctx.u;
+  const list = POSITIONS.map((p) => ctx.out.get(p)).filter(Boolean) as Assignment[];
+
+  for (let pass = 0; pass < 4; pass++) {
+    let moved = false;
+
+    for (let i = 0; i < list.length; i++) {
+      for (let j = i + 1; j < list.length; j++) {
+        const a = list[i];
+        const b = list[j];
+        const d = dist(a.target, b.target);
+        if (d >= min) continue;
+
+        const [fixed, mover] =
+          ROLE_PRIORITY[a.role.kind] <= ROLE_PRIORITY[b.role.kind] ? [a, b] : [b, a];
+        const away =
+          d < 0.01 ? { x: 0, y: 1 } : normalize(sub(mover.target, fixed.target));
+        mover.target = add(fixed.target, scale(away, min));
+        moved = true;
+      }
+    }
+
+    if (!moved) break;
+  }
+}
+
 export function resolvePlay(input: PlayInput): ResolvedPlay {
   const { level, posture } = input.situation;
   const cfg = FIELD_CONFIGS[level];
@@ -361,6 +421,7 @@ export function resolvePlay(input: PlayInput): ResolvedPlay {
   layerCoverage(ctx);
   layerBackups(ctx);
   layerRemainder(ctx);
+  layerSpacing(ctx);
 
   return {
     assignments: POSITIONS.map((p) => ctx.out.get(p)!),

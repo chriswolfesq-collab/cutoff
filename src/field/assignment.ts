@@ -60,3 +60,29 @@ export type ResolvedPlay = {
   throws: ThrowRef[];
   notes: string[];
 };
+
+/**
+ * A compact, comparable string for a role: `primary`, `cover:first`,
+ * `backup:second`, `backupFielder:LF`. Test expectations are written in this
+ * form so a scenario reads like a lineup card rather than a wall of objects.
+ */
+export function roleKey(role: Role): string {
+  switch (role.kind) {
+    case 'primary':
+      return 'primary';
+    case 'watch':
+      return 'watch';
+    case 'cover':
+      return `cover:${role.base}`;
+    case 'backupBase':
+      return `backup:${role.base}`;
+    case 'backupFielder':
+      return `backupFielder:${role.fielder}`;
+    case 'cutoff':
+      return `cutoff:${role.on.to}`;
+    case 'relay':
+      return `relay:${role.on.to}`;
+    case 'trail':
+      return `trail:${role.behind}`;
+  }
+}

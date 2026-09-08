@@ -23,7 +23,7 @@ Known gaps, all deliberate:
 - **No secondary coverage.** On a ball to the right side the second baseman
   should break to first behind the pitcher; expressing that needs a notion of
   secondary assignment the `Role` union does not have yet.
-- **No tests.** Eyeballed in the browser only. Phase 5.
+Tests are in — see below.
 
 ### The resolver
 
@@ -73,6 +73,36 @@ All field math is in feet, with home plate at the origin, +y toward center field
 and +x toward the first-base side. Base distance is a parameter, which is what
 lets Youth (60' bases) and Adult (90') share one renderer.
 
+## Tests
+
+    npm test
+
+Three layers, and they do different jobs.
+
+**Invariants** (`src/engine/invariants.test.ts`) sweep ~9,200 plays — every
+plausible level, spot, ball type and outcome — and assert the output is never
+*malformed*: all nine fielders assigned exactly once, every base taking a throw
+has somebody on it and somebody behind it, no two men sent to the same spot,
+nobody outside the park, the primary always at the ball. These say nothing about
+whether the baseball is right; they catch the failures that are invisible in a
+table and obvious on a field.
+
+**The golden corpus** (`src/engine/corpus.ts`) is ~20 canonical plays with
+hand-authored expectations, written as role keys — `cover:first`,
+`backup:second`, `backupFielder:LF`. Each asserts only the fielders it speaks
+to, so an unrelated rule change does not break every scenario. A failure here
+means the baseball changed; read the diff before touching the expectation.
+
+**The playbook snapshot** (`playbook.md`) renders the whole zone-to-fielder map
+as markdown. It is the document to hand a coach, and because it is a snapshot
+any change to the map arrives as a readable diff. Accept an intended change with
+`npx vitest -u`.
+
+Still missing: nobody who actually coaches has reviewed the tables. The corpus
+expectations were reasoned out from the rules, by the same hand that wrote them,
+so they lock in behaviour but cannot vouch for it. That review is the real
+remaining validation.
+
 ## Develop
 
     npm install
@@ -82,7 +112,5 @@ lets Youth (60' bases) and Adult (90') share one renderer.
 
 ## Next
 
-Phase 2: the resolver layers — primary, throw prediction, cutoff/relay, base
-coverage, backups. Phase 5 adds the golden corpus, which needs a test runner
-(vitest) and will bring a `tools/` dump script for reviewing the tables without
-the UI.
+Phase 3: the resolver layers — primary, throw prediction, cutoff/relay, base
+coverage, backups. Runners and cut/relay are next, with the test net already under them.

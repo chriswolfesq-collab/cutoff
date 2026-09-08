@@ -71,6 +71,8 @@ export type PrimaryCall = {
   ruleId: string;
 };
 
+const RAD = Math.PI / 180;
+
 export function primaryFor(zone: Zone, ball: string, level: Level): PrimaryCall {
   const cfg = FIELD_CONFIGS[level];
   const u = cfg.baseDistance / 90;
@@ -94,6 +96,15 @@ export function primaryFor(zone: Zone, ball: string, level: Level): PrimaryCall 
     // Only balls straight over the mound — a pop down the line at this depth
     // belongs to the corner, not the pitcher.
     const overMound = sector === 'middle_L' || sector === 'middle_R';
+    // A ball on the ground within his reach of the mound is the pitcher's,
+    // whatever sector it nominally falls in — sector ownership assumes the
+    // ball got past him.
+    const at = { x: zone.r * Math.sin(zone.theta * RAD), y: zone.r * Math.cos(zone.theta * RAD) };
+    const fromMound = Math.hypot(at.x, at.y - cfg.moundDistance);
+    if ((ball === 'ground' || ball === 'bunt') && fromMound < 16 * u) {
+      return { position: 'P', why: 'Right back at the pitcher.', ruleId: 'primary.comebacker' };
+    }
+
     if ((ball === 'popup' || ball === 'fly') && zone.band === 'in' && overMound) {
       return { position: 'P', why: 'Popped up over the mound — pitcher, unless waved off.', ruleId: 'primary.mound' };
     }
