@@ -51,6 +51,7 @@ export default function Field({
   highlight,
   onPick,
   onHighlight,
+  onAnswer,
 }: {
   level: Level;
   posture?: Posture;
@@ -61,6 +62,8 @@ export default function Field({
   highlight?: Position | null;
   onPick?: (p: Point) => void;
   onHighlight?: (p: Position | null) => void;
+  /** Drill mode: clicking a fielder answers the question instead of hovering. */
+  onAnswer?: (p: Position) => void;
 }) {
   const cfg = FIELD_CONFIGS[level];
   const b = bases(cfg);
@@ -195,10 +198,11 @@ export default function Field({
         return (
           <g
             key={pos}
-            className={`fielder ${cls}${highlight === pos ? ' hot' : ''}`}
+            className={`fielder ${cls}${highlight === pos ? ' hot' : ''}${onAnswer ? ' answerable' : ''}`}
             transform={`translate(${s.x.toFixed(2)} ${s.y.toFixed(2)})`}
             onMouseEnter={() => onHighlight?.(pos)}
             onMouseLeave={() => onHighlight?.(null)}
+            onClick={() => onAnswer?.(pos)}
           >
             <circle cx={0} cy={0} r={r} />
             <text x={0} y={0} dy={r * 0.36} fontSize={r * 1.05}>

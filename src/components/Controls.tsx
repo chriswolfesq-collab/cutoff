@@ -2,7 +2,7 @@ import { POSTURE_NAMES, type Posture } from '../field/alignments';
 import type { Level } from '../field/geometry';
 import { BALL_TYPES, BALL_TYPE_NAMES, type BallType, type Outs, type Situation } from '../field/play';
 
-function Segmented<T extends string | number>({
+export function Segmented<T extends string | number>({
   label,
   value,
   options,
