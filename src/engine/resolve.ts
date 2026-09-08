@@ -38,6 +38,7 @@ import {
 } from './context';
 import { layerThrows } from './throws';
 import { layerCutoffRelay } from './cutoff';
+import { buildPhases } from './phases';
 
 // --- layer 1: who has the ball -------------------------------------------
 
@@ -106,17 +107,23 @@ function coverCandidates(ctx: Ctx, base: BaseId): { order: Position[]; why: stri
   return { order: ['C', 'P', '1B'], why: 'Covers the plate.', ruleId: 'cover.home' };
 }
 
-function assignCover(ctx: Ctx, base: BaseId, from: Point, whyOverride?: string) {
+function assignCover(ctx: Ctx, base: BaseId, from: Point, whyOverride?: string): Position | undefined {
   const { order, why, ruleId } = coverCandidates(ctx, base);
   const who = order.find((p) => !ctx.out.has(p)) ?? POSITIONS.find((p) => !ctx.out.has(p));
-  if (!who) return;
+  if (!who) return undefined;
   put(ctx, who, { kind: 'cover', base }, coverPoint(ctx, base, from), whyOverride ?? why, ruleId);
+  return who;
 }
 
 function layerCoverage(ctx: Ctx) {
-  for (const t of ctx.throws) {
-    assignCover(ctx, t.to, spotOf(ctx, t.from));
-  }
+  ctx.throws.forEach((t, i) => {
+    const who = assignCover(ctx, t.to, spotOf(ctx, t.from));
+    // The man who takes a throw is the man who makes the next one. On a 6-4-3
+    // the relay to first comes off the second baseman, not off the shortstop
+    // who started it.
+    const next = ctx.throws[i + 1];
+    if (who && next) next.from = who;
+  });
 
   // Nobody is throwing there, but second base is not left open: if the throw
   // to first gets away, that is the base the batter-runner goes to.
@@ -365,5 +372,6 @@ export function resolvePlay(input: PlayInput): ResolvedPlay {
     throws: ctx.throws,
     notes: ctx.notes,
     ballAt: ctx.ball,
+    phases: buildPhases(ctx),
   };
 }

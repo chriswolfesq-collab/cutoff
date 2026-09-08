@@ -198,6 +198,59 @@ describe(`resolver invariants over ${PLAYS.length} plays`, () => {
     assertNoFailures(failures);
   });
 
+  it('builds one phase per throw, plus the set and contact', () => {
+    const failures: string[] = [];
+    for (const p of PLAYS) {
+      const play = resolvePlay(p);
+      if (play.phases.length !== play.throws.length + 2) {
+        failures.push(`${label(p)}: ${play.phases.length} phases for ${play.throws.length} throws`);
+        continue;
+      }
+      if (play.phases.some((ph, i) => ph.index !== i)) {
+        failures.push(`${label(p)}: phase indices out of order`);
+      }
+      const active = play.phases.filter((ph) => ph.activeThrow).length;
+      if (active !== play.throws.length) {
+        failures.push(`${label(p)}: ${active} live phases for ${play.throws.length} throws`);
+      }
+    }
+    assertNoFailures(failures);
+  });
+
+  it('puts exactly the runners who exist on the field, in bounds', () => {
+    const failures: string[] = [];
+    for (const p of PLAYS) {
+      const { runners } = p.situation;
+      const expected = 1 + [runners.first, runners.second, runners.third].filter(Boolean).length;
+      const cfg = FIELD_CONFIGS[p.situation.level];
+      const limit = cfg.baseDistance * Math.SQRT2 + 40;
+
+      for (const phase of resolvePlay(p).phases) {
+        if (phase.runners.length !== expected) {
+          failures.push(`${label(p)}: phase ${phase.index} has ${phase.runners.length} runners, want ${expected}`);
+          break;
+        }
+        const stray = phase.runners.find((rn) => Math.hypot(rn.at.x, rn.at.y) > limit);
+        if (stray) {
+          failures.push(`${label(p)}: ${stray.id} off the basepaths at phase ${phase.index}`);
+          break;
+        }
+      }
+    }
+    assertNoFailures(failures);
+  });
+
+  it('never has a runner moving before contact', () => {
+    const failures: string[] = [];
+    for (const p of PLAYS) {
+      const set = resolvePlay(p).phases[0];
+      if (set.runners.some((rn) => rn.moving)) {
+        failures.push(`${label(p)}: somebody is already running at the set`);
+      }
+    }
+    assertNoFailures(failures);
+  });
+
   it('sends the primary fielder to the ball', () => {
     const failures: string[] = [];
     for (const p of PLAYS) {

@@ -1,7 +1,6 @@
 import type React from 'react';
 import {
   FIELD_CONFIGS,
-  along,
   bases,
   dist,
   fenceCurve,
@@ -13,8 +12,7 @@ import {
   type Point,
 } from '../field/geometry';
 import { alignment, POSITIONS, POSITION_NUMBERS, type Position, type Posture } from '../field/alignments';
-import type { ResolvedPlay } from '../field/assignment';
-import type { Runners } from '../field/play';
+import type { PlayPhase, ResolvedPlay } from '../field/assignment';
 import { ROLE_CLASS } from './roleStyles';
 import ZoneOverlay from './ZoneOverlay';
 
@@ -49,7 +47,7 @@ export default function Field({
   showZones = false,
   pick,
   play,
-  runners,
+  phase,
   highlight,
   onPick,
   onHighlight,
@@ -59,7 +57,7 @@ export default function Field({
   showZones?: boolean;
   pick?: Point | null;
   play?: ResolvedPlay | null;
-  runners?: Runners;
+  phase?: PlayPhase | null;
   highlight?: Position | null;
   onPick?: (p: Point) => void;
   onHighlight?: (p: Position | null) => void;
@@ -88,6 +86,9 @@ export default function Field({
   const r = 9 * unit;
 
   const byPosition = new Map(play?.assignments.map((a) => [a.position, a]));
+  // At the set nothing has happened yet, so everyone is still where they lined
+  // up — the movement only reads as movement if there is a before.
+  const atSet = (phase?.index ?? 1) === 0;
 
   // Screen pixels -> viewBox units -> field feet. The viewBox is already in
   // feet, so the only correction is the y flip.
@@ -148,12 +149,13 @@ export default function Field({
       <circle cx={0} cy={0} r={baseSize * 0.55} className="base" />
 
       {/* Where the ball crossed, if that is not where it gets fielded. */}
-      {play && pick && dist(pick, play.ballAt) > 4 * unit && (
+      {play && pick && !atSet && dist(pick, play.ballAt) > 4 * unit && (
         <path d={path([pick, play.ballAt])} className="ball-path" />
       )}
 
       {/* Routes: where each fielder is coming from. */}
       {play &&
+        !atSet &&
         play.assignments.map((a) => {
           const from = start[a.position];
           if (dist(from, a.target) < 6 * unit) return null;
@@ -166,18 +168,16 @@ export default function Field({
           );
         })}
 
-      {play?.throws.map((t) => {
-        const from = byPosition.get(t.from)?.target;
-        if (!from) return null;
-        return (
-          <path
-            key={`throw-${t.from}-${t.to}`}
-            d={path([from, b[t.to]])}
-            className="throw"
-            markerEnd="url(#throw-head)"
-          />
-        );
-      })}
+      {/* Only the throw actually in the air right now. */}
+      {phase?.activeThrow &&
+        (() => {
+          const t = phase.activeThrow;
+          const from = byPosition.get(t.from)?.target;
+          if (!from) return null;
+          return (
+            <path d={path([from, b[t.to]])} className="throw" markerEnd="url(#throw-head)" />
+          );
+        })()}
 
       {pick && (
         <g className="pick" pointerEvents="none">
@@ -186,38 +186,44 @@ export default function Field({
         </g>
       )}
 
+      {/* Positions live on a transform so the browser can tween them. */}
       {POSITIONS.map((pos) => {
         const a = byPosition.get(pos);
-        const at = a ? a.target : start[pos];
+        const at = a && !atSet ? a.target : start[pos];
         const s = toScreen(at);
-        const cls = a ? ROLE_CLASS[a.role.kind] : '';
+        const cls = a && !atSet ? ROLE_CLASS[a.role.kind] : '';
         return (
           <g
             key={pos}
             className={`fielder ${cls}${highlight === pos ? ' hot' : ''}`}
+            transform={`translate(${s.x.toFixed(2)} ${s.y.toFixed(2)})`}
             onMouseEnter={() => onHighlight?.(pos)}
             onMouseLeave={() => onHighlight?.(null)}
           >
-            <circle cx={s.x} cy={s.y} r={r} />
-            <text x={s.x} y={s.y} dy={r * 0.36} fontSize={r * 1.05}>
+            <circle cx={0} cy={0} r={r} />
+            <text x={0} y={0} dy={r * 0.36} fontSize={r * 1.05}>
               {POSITION_NUMBERS[pos]}
             </text>
-            <text x={s.x} y={s.y - r * 1.45} fontSize={r * 0.9} className="fielder-label">
+            <text x={0} y={-r * 1.45} fontSize={r * 0.9} className="fielder-label">
               {pos}
             </text>
           </g>
         );
       })}
 
-      {runners && (
+      {phase && (
         <g className="runners" pointerEvents="none">
-          {([['first', 'home'], ['second', 'first'], ['third', 'second']] as const)
-            .filter(([base]) => runners[base])
-            .map(([base, from]) => {
-              // Off the bag toward the previous one, the way a runner leads.
-              const at = toScreen(along(b[base], b[from], 14 * unit));
-              return <circle key={base} cx={at.x} cy={at.y} r={r * 0.55} className="runner" />;
-            })}
+          {phase.runners.map((rn) => {
+            const at = toScreen(rn.at);
+            return (
+              <circle
+                key={rn.id}
+                className={`runner${rn.moving ? ' moving' : ''}`}
+                r={r * 0.55}
+                transform={`translate(${at.x.toFixed(2)} ${at.y.toFixed(2)})`}
+              />
+            );
+          })}
         </g>
       )}
     </svg>

@@ -22,6 +22,10 @@ export type Scenario = {
   primaryRule?: string;
   /** Expected throw destinations, in order. */
   throws?: string[];
+  /** Expected throw origins, in order — the chain from fielder to fielder. */
+  throwsFrom?: string[];
+  /** Expected phase labels, in order. */
+  phases?: string[];
   /** Role keys — see roleKey() in field/assignment.ts. */
   expect: Partial<Record<Position, string>>;
 };
@@ -195,6 +199,7 @@ export const CORPUS: Scenario[] = [
     at: { x: 0, y: 170 },
     outcome: 'caught',
     throws: [],
+    phases: ['Set', 'Ball lands'],
     expect: { CF: 'primary', LF: 'backupFielder:CF', '1B': 'watch', SS: 'watch' },
   },
   {
@@ -222,6 +227,9 @@ export const CORPUS: Scenario[] = [
     at: { x: -27, y: 87 },
     outcome: 'fielded',
     throws: ['second', 'first'],
+    // The relay to first comes off the second baseman, not the shortstop.
+    throwsFrom: ['SS', '2B'],
+    phases: ['Set', 'Contact', 'Throw 1: SS to second', 'Throw 2: 2B to first'],
     expect: {
       SS: 'primary',
       '2B': 'cover:second',
@@ -264,6 +272,7 @@ export const CORPUS: Scenario[] = [
     at: { x: -27, y: 87 },
     outcome: 'fielded',
     throws: ['home', 'first'],
+    throwsFrom: ['SS', 'C'],
     expect: { SS: 'primary', C: 'cover:home', '1B': 'cover:first' },
   },
   {

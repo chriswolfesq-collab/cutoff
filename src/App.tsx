@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Field from './components/Field';
 import Controls from './components/Controls';
 import { POSITION_NAMES, type Position } from './field/alignments';
@@ -28,6 +28,13 @@ export default function App() {
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [highlight, setHighlight] = useState<Position | null>(null);
 
+  /**
+   * Scrub position is stored against a signature of the play it belongs to, so
+   * picking a different play resets to contact during render rather than in an
+   * effect that fires a second pass.
+   */
+  const [scrub, setScrub] = useState({ sig: '', index: 1, playing: false });
+
   const zone = pick ? classify(pick, situation.level) : null;
   const plausible = zone ? isPlausible(ball, zone) : false;
   const outcomes = zone ? validOutcomes(ball, zone) : [];
@@ -37,6 +44,41 @@ export default function App() {
     pick && outcome && plausible
       ? resolvePlay({ situation, ball, at: pick, outcome })
       : null;
+
+  const sig =
+    pick && outcome && plausible
+      ? [
+          situation.level, situation.outs, situation.posture, situation.batterHand,
+          situation.runners.first, situation.runners.second, situation.runners.third,
+          ball, outcome, pick.x.toFixed(1), pick.y.toFixed(1),
+        ].join('|')
+      : '';
+
+  const lastPhase = play ? play.phases.length - 1 : 0;
+  const current = scrub.sig === sig ? scrub : { sig, index: 1, playing: false };
+  const phaseIndex = Math.min(current.index, lastPhase);
+  // Playback stops on its own at the end; deriving it keeps the button honest
+  // without writing state from inside the timer effect.
+  const playing = current.playing && phaseIndex < lastPhase;
+  const currentPhase = play?.phases[phaseIndex] ?? null;
+
+  useEffect(() => {
+    if (!playing) return;
+    const timer = setTimeout(
+      () => setScrub((sc) => ({ ...sc, index: sc.index + 1 })),
+      950,
+    );
+    return () => clearTimeout(timer);
+  }, [playing, phaseIndex]);
+
+  const togglePlay = () => {
+    if (playing) {
+      setScrub({ sig, index: phaseIndex, playing: false });
+      return;
+    }
+    // Pressing play at the end replays from the set.
+    setScrub({ sig, index: phaseIndex >= lastPhase ? 0 : phaseIndex, playing: true });
+  };
 
   const choose = (p: Point) => {
     setPick(p);
@@ -63,17 +105,44 @@ export default function App() {
       />
 
       <div className="layout">
-        <Field
-          level={situation.level}
-          posture={situation.posture}
-          showZones={showZones}
-          pick={pick}
-          play={play}
-          runners={situation.runners}
-          highlight={highlight}
-          onPick={choose}
-          onHighlight={setHighlight}
-        />
+        <div className="stage">
+          <Field
+            level={situation.level}
+            posture={situation.posture}
+            showZones={showZones}
+            pick={pick}
+            play={play}
+            phase={currentPhase}
+            highlight={highlight}
+            onPick={choose}
+            onHighlight={setHighlight}
+          />
+
+          {play && (
+            <div className="scrubber">
+              <button
+                type="button"
+                className="play-button"
+                onClick={togglePlay}
+                aria-label={playing ? 'Pause' : 'Play the sequence'}
+              >
+                {playing ? '❚❚' : '▶'}
+              </button>
+              <div className="phases" role="group" aria-label="Play phase">
+                {play.phases.map((ph) => (
+                  <button
+                    key={ph.index}
+                    type="button"
+                    aria-pressed={currentPhase?.index === ph.index}
+                    onClick={() => setScrub({ sig, index: ph.index, playing: false })}
+                  >
+                    {ph.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         <aside className="panel">
           {!zone && <p className="hint">Click anywhere on the field to classify a batted ball.</p>}

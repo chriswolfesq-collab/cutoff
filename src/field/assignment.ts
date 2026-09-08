@@ -34,13 +34,28 @@ export const ROLE_LABELS: Record<Role['kind'], string> = {
   watch: 'Reads the play',
 };
 
-/** A play unfolds in phases; fielders re-target at each one. */
-export type Phase = 1 | 2 | 3;
+/**
+ * A play unfolds as a sequence: the set before the pitch, contact, then one
+ * step per throw. Fielders hold a single job throughout — under the current
+ * rules nobody's assignment changes mid-play — so what moves between phases is
+ * the ball, the runners, and which throw is live.
+ */
+export type RunnerId = 'batter' | 'first' | 'second' | 'third';
 
-export const PHASE_NAMES: Record<Phase, string> = {
-  1: 'Contact',
-  2: 'First throw',
-  3: 'Trail runner',
+export type RunnerSpot = {
+  id: RunnerId;
+  at: Point;
+  /** True while he is between bases rather than standing on one. */
+  moving: boolean;
+};
+
+export type PlayPhase = {
+  /** 0 is the set before the pitch; 1 is contact; 2 and up are the throws. */
+  index: number;
+  label: string;
+  /** The throw in flight during this phase, if any. */
+  activeThrow?: ThrowRef;
+  runners: RunnerSpot[];
 };
 
 export type Assignment = {
@@ -50,7 +65,8 @@ export type Assignment = {
   target: Point;
   /** Optional route, when a straight line would be wrong (P looping behind home). */
   path?: Point[];
-  phase: Phase;
+  /** The phase this job starts at. Everything is 1 today; see PlayPhase. */
+  phase: number;
   why: string;
   ruleId: string;
 };
@@ -65,6 +81,7 @@ export type ResolvedPlay = {
    * point where it crossed.
    */
   ballAt: Point;
+  phases: PlayPhase[];
 };
 
 /**

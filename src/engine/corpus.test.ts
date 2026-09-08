@@ -43,6 +43,14 @@ describe('golden corpus', () => {
       if (scenario.throws) {
         expect(play.throws.map((t) => t.to)).toEqual(scenario.throws);
       }
+
+      if (scenario.throwsFrom) {
+        expect(play.throws.map((t) => t.from)).toEqual(scenario.throwsFrom);
+      }
+
+      if (scenario.phases) {
+        expect(play.phases.map((ph) => ph.label)).toEqual(scenario.phases);
+      }
     });
   }
 });

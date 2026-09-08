@@ -6,14 +6,16 @@ fielders should be — who fields it, who covers, who cuts, who backs up.
 
 ## Status
 
-Phase 3: runners and cut/relay. All eight base states, three out counts and six
-postures resolve.
+Phase 4: the play as a sequence. A scrubber steps through the set, contact and
+each throw, with the runners moving and one throw in the air at a time.
 
 Known gaps, all deliberate:
 
-- **One phase per play.** Fielders get a single target, not a sequence.
-  Conditional jobs ("back up third *or* home depending on the throw") need the
-  phase scrubber.
+- **Nobody's *assignment* changes mid-play.** Fielders hold one job throughout,
+  which is true of every situation the rules currently produce — no throw in the
+  engine is conditional on where an earlier one went. When conditional jobs
+  arrive ("back up third *or* home depending on the throw"), `Assignment.phase`
+  is where they go; the phase model is already under them.
 - **No rundowns, no first-and-third plays, no pickoffs.**
 - **The batter-runner is not tracked past his first destination** — nobody
   reacts to him taking an extra base while the throw is elsewhere.
@@ -47,6 +49,17 @@ The engine is split across four files: `context.ts` (shared state and the
 geometry helpers), `throws.ts` (where the ball goes, the runner rules),
 `cutoff.ts` (cut and relay, where Youth and Adult genuinely differ) and
 `resolve.ts` (everything else, plus the orchestration).
+
+### Phases
+
+A play is the set, then contact, then one step per throw. What moves between
+phases is the ball, the runners, and which throw is live — the fielders hold
+their positions, because under the current rules their jobs do not change.
+
+The runners are the point. Nine fielders standing in the right places does not
+explain *why* they are there; a runner halfway to third does. A throw's origin
+chains through its receiver, so a 6-4-3 reads as `SS to second` then
+`2B to first` rather than two arrows off the shortstop.
 
 ### Throw prediction
 
