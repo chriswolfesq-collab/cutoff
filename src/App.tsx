@@ -69,6 +69,7 @@ export default function App() {
           showZones={showZones}
           pick={pick}
           play={play}
+          runners={situation.runners}
           highlight={highlight}
           onPick={choose}
           onHighlight={setHighlight}

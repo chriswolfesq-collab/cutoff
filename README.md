@@ -6,36 +6,64 @@ fielders should be — who fields it, who covers, who cuts, who backs up.
 
 ## Status
 
-Phase 2: the resolver, **bases empty only**.
-
-Pick a ball type, click a spot, choose what happened, and all nine fielders get
-a job with a reason. Set runners and the app says plainly that it is still
-showing you the bases-empty play — it does not pretend.
+Phase 3: runners and cut/relay. All eight base states, three out counts and six
+postures resolve.
 
 Known gaps, all deliberate:
 
-- **Cut and relay are not modelled.** `layerCutoffRelay` is an empty seam, and
-  the UI says so on any throw from the outfield. Phase 3.
-- **Runners do nothing yet.** They are in the schema and the UI, not the engine.
 - **One phase per play.** Fielders get a single target, not a sequence.
   Conditional jobs ("back up third *or* home depending on the throw") need the
-  phase scrubber, which is phase 4.
+  phase scrubber.
+- **No rundowns, no first-and-third plays, no pickoffs.**
+- **The batter-runner is not tracked past his first destination** — nobody
+  reacts to him taking an extra base while the throw is elsewhere.
 - **No secondary coverage.** On a ball to the right side the second baseman
   should break to first behind the pitcher; expressing that needs a notion of
   secondary assignment the `Role` union does not have yet.
-Tests are in — see below.
+- **The first baseman does not trail the runner on a base hit.** He is left
+  idle rather than given a job nobody is confident about.
 
 ### The resolver
 
 Layers run in order, each claiming fielders the previous ones left free:
 
-    primary -> throws -> cutoff/relay -> coverage -> backups -> remainder
+    primary -> throws -> cutoff/relay -> coverage -> backups -> remainder -> spacing
 
-The ordering is the design. Primary goes first because everything keys off who
-has the ball. Backups go last because they are whoever is left standing nearest
-the throw. Within backups, *backing up the man with the ball* is claimed before
-*backing up a bag* — a throw past a base costs one base, a ball past an
-outfielder costs three.
+The ordering is the design:
+
+- **primary** first, because everything keys off who has the ball
+- **cut and relay** before coverage, because a cut man has to be claimed before
+  the bases take the middle infielders
+- **backups** last, because they are whoever is left standing nearest the throw
+- **spacing** cleans up afterwards: nine men resolved independently can land on
+  each other, so the least-committed one gives way
+
+Within backups, *backing up the man with the ball* is claimed before *backing up
+a bag* when an outfielder has it — a throw past a base costs one base, a ball
+past an outfielder costs three — and the other way round when an infielder does,
+because then there is nothing to get past him.
+
+The engine is split across four files: `context.ts` (shared state and the
+geometry helpers), `throws.ts` (where the ball goes, the runner rules),
+`cutoff.ts` (cut and relay, where Youth and Adult genuinely differ) and
+`resolve.ts` (everything else, plus the orchestration).
+
+### Throw prediction
+
+The organising idea is the *lead runner you can actually get*. A force is a play
+you always have; an unforced runner is a play only if the defence is set up for
+it. So the rules walk down from the lead base and the first one that yields a
+real play wins — which is why the infield being in is what decides whether a
+ground ball goes home or to first with a man on third.
+
+### Youth vs Adult
+
+Two places where the level is not just a change of dimensions:
+
+| | Youth | Adult |
+|---|---|---|
+| Cutoff on throws home | 1B every time | 3B from left field, 1B otherwise |
+| Ball to the wall | One relay man; the other stays on second | Lead relay plus a trailer behind him |
 
 ## Design notes
 

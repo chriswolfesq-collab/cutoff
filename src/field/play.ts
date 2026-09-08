@@ -99,6 +99,9 @@ export function validOutcomes(ball: BallType, zone: Zone): Outcome[] {
     case 'bunt':
       return ['fielded', 'noPlay', 'through'];
     case 'ground':
+      // Nothing has been got through yet at bunt depth — it either gets
+      // fielded or it sits there.
+      if (zone.band === 'bunt') return ['fielded', 'bobbled', 'noPlay'];
       return infield ? ['fielded', 'bobbled', 'through'] : ['fielded', 'toWall'];
     case 'line':
       return infield ? ['caught', 'through'] : ['caught', 'drops', 'toWall'];

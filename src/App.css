@@ -284,6 +284,22 @@ code {
 
 /* --- resolved play --- */
 
+.runner {
+  fill: var(--runner);
+  stroke: #fff;
+  stroke-width: 1.8;
+}
+
+.ball-path {
+  fill: none;
+  stroke: var(--pick);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+  opacity: 0.6;
+}
+
+.fielder.role-cut circle { fill: var(--r-cut); }
+
 .route {
   fill: none;
   stroke-width: 2;

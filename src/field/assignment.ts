@@ -59,6 +59,12 @@ export type ResolvedPlay = {
   assignments: Assignment[];
   throws: ThrowRef[];
   notes: string[];
+  /**
+   * Where the ball is actually fielded. Usually the spot the user clicked, but
+   * a ball that gets through the infield is picked up further out than the
+   * point where it crossed.
+   */
+  ballAt: Point;
 };
 
 /**

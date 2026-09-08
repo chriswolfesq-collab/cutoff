@@ -1,6 +1,7 @@
 import type React from 'react';
 import {
   FIELD_CONFIGS,
+  along,
   bases,
   dist,
   fenceCurve,
@@ -13,6 +14,7 @@ import {
 } from '../field/geometry';
 import { alignment, POSITIONS, POSITION_NUMBERS, type Position, type Posture } from '../field/alignments';
 import type { ResolvedPlay } from '../field/assignment';
+import type { Runners } from '../field/play';
 import { ROLE_CLASS } from './roleStyles';
 import ZoneOverlay from './ZoneOverlay';
 
@@ -47,6 +49,7 @@ export default function Field({
   showZones = false,
   pick,
   play,
+  runners,
   highlight,
   onPick,
   onHighlight,
@@ -56,6 +59,7 @@ export default function Field({
   showZones?: boolean;
   pick?: Point | null;
   play?: ResolvedPlay | null;
+  runners?: Runners;
   highlight?: Position | null;
   onPick?: (p: Point) => void;
   onHighlight?: (p: Position | null) => void;
@@ -143,6 +147,11 @@ export default function Field({
       <Base at={b.third} size={baseSize} />
       <circle cx={0} cy={0} r={baseSize * 0.55} className="base" />
 
+      {/* Where the ball crossed, if that is not where it gets fielded. */}
+      {play && pick && dist(pick, play.ballAt) > 4 * unit && (
+        <path d={path([pick, play.ballAt])} className="ball-path" />
+      )}
+
       {/* Routes: where each fielder is coming from. */}
       {play &&
         play.assignments.map((a) => {
@@ -199,6 +208,18 @@ export default function Field({
           </g>
         );
       })}
+
+      {runners && (
+        <g className="runners" pointerEvents="none">
+          {([['first', 'home'], ['second', 'first'], ['third', 'second']] as const)
+            .filter(([base]) => runners[base])
+            .map(([base, from]) => {
+              // Off the bag toward the previous one, the way a runner leads.
+              const at = toScreen(along(b[base], b[from], 14 * unit));
+              return <circle key={base} cx={at.x} cy={at.y} r={r * 0.55} className="runner" />;
+            })}
+        </g>
+      )}
     </svg>
   );
 }
