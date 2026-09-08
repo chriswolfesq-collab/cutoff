@@ -6,12 +6,36 @@ fielders should be — who fields it, who covers, who cuts, who backs up.
 
 ## Status
 
-Phase 1: the data layer. Situation schema, zone map, outcome rules and posture
-tables are in; the rules engine (phase 2) is not.
+Phase 2: the resolver, **bases empty only**.
 
-You can set a situation, pick a ball type, click anywhere on the field and see
-which zone it lands in and who owns it. That is the phase-1 deliverable — a zone
-map you cannot see is a zone map you cannot check.
+Pick a ball type, click a spot, choose what happened, and all nine fielders get
+a job with a reason. Set runners and the app says plainly that it is still
+showing you the bases-empty play — it does not pretend.
+
+Known gaps, all deliberate:
+
+- **Cut and relay are not modelled.** `layerCutoffRelay` is an empty seam, and
+  the UI says so on any throw from the outfield. Phase 3.
+- **Runners do nothing yet.** They are in the schema and the UI, not the engine.
+- **One phase per play.** Fielders get a single target, not a sequence.
+  Conditional jobs ("back up third *or* home depending on the throw") need the
+  phase scrubber, which is phase 4.
+- **No secondary coverage.** On a ball to the right side the second baseman
+  should break to first behind the pitcher; expressing that needs a notion of
+  secondary assignment the `Role` union does not have yet.
+- **No tests.** Eyeballed in the browser only. Phase 5.
+
+### The resolver
+
+Layers run in order, each claiming fielders the previous ones left free:
+
+    primary -> throws -> cutoff/relay -> coverage -> backups -> remainder
+
+The ordering is the design. Primary goes first because everything keys off who
+has the ball. Backups go last because they are whoever is left standing nearest
+the throw. Within backups, *backing up the man with the ball* is claimed before
+*backing up a bag* — a throw past a base costs one base, a ball past an
+outfielder costs three.
 
 ## Design notes
 

@@ -13,6 +13,14 @@
   --panel: #191e15;
   --pick: #ff6b4a;
   --warn: #e0a94a;
+  --throw: #ff8a5c;
+
+  /* role colours, shared by the field markers and the assignment list */
+  --r-primary: #ffb340;
+  --r-cover: #66d17a;
+  --r-backup: #a78bfa;
+  --r-cut: #5bc0eb;
+  --r-watch: #7d8a72;
 
   font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   color-scheme: dark;

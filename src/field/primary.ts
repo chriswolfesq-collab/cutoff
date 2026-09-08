@@ -8,7 +8,13 @@
 
 import type { Position } from './alignments';
 import { FIELD_CONFIGS, type Level } from './geometry';
-import { isInfieldBand, type InfieldSector, type OutfieldSector, type Zone } from './zones';
+import {
+  isInfieldBand,
+  OUTFIELD_SECTORS,
+  type InfieldSector,
+  type OutfieldSector,
+  type Zone,
+} from './zones';
 
 /** Straight-up sector ownership at normal infield depth. */
 const INFIELD_OWNER: Record<InfieldSector, Position> = {
@@ -48,6 +54,15 @@ const BUNT_OWNER: Record<InfieldSector, Position> = {
   '1B': '1B',
   '1B_line': '1B',
 };
+
+/** Which outfielder is behind a given angle — used when a ball gets through. */
+export function outfieldOwnerAt(theta: number): Position {
+  const clamped = Math.max(-45, Math.min(45, theta));
+  const span =
+    OUTFIELD_SECTORS.find((s) => clamped >= s.from && clamped < s.to) ??
+    OUTFIELD_SECTORS[OUTFIELD_SECTORS.length - 1];
+  return OUTFIELD_OWNER[span.id];
+}
 
 export type PrimaryCall = {
   position: Position;

@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import Field from './components/Field';
 import Controls from './components/Controls';
-import { POSITION_NAMES } from './field/alignments';
+import { POSITION_NAMES, type Position } from './field/alignments';
+import { ROLE_LABELS } from './field/assignment';
+import { resolvePlay } from './engine/resolve';
+import { ROLE_CLASS } from './components/roleStyles';
 import type { Point } from './field/geometry';
 import { classify, DEPTH_BAND_NAMES, SECTOR_NAMES } from './field/zones';
 import { primaryFor } from './field/primary';
@@ -23,11 +26,17 @@ export default function App() {
   const [showZones, setShowZones] = useState(true);
   const [pick, setPick] = useState<Point | null>(null);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
+  const [highlight, setHighlight] = useState<Position | null>(null);
 
   const zone = pick ? classify(pick, situation.level) : null;
   const plausible = zone ? isPlausible(ball, zone) : false;
   const outcomes = zone ? validOutcomes(ball, zone) : [];
   const primary = zone && plausible ? primaryFor(zone, ball, situation.level) : null;
+
+  const play =
+    pick && outcome && plausible
+      ? resolvePlay({ situation, ball, at: pick, outcome })
+      : null;
 
   const choose = (p: Point) => {
     setPick(p);
@@ -59,7 +68,10 @@ export default function App() {
           posture={situation.posture}
           showZones={showZones}
           pick={pick}
+          play={play}
+          highlight={highlight}
           onPick={choose}
+          onHighlight={setHighlight}
         />
 
         <aside className="panel">
@@ -112,10 +124,33 @@ export default function App() {
                 </div>
               )}
 
-              {outcome && (
-                <p className="hint next">
-                  Phase 2 resolves all nine fielders from here.
-                </p>
+              {play && (
+                <div className="result">
+                  {play.notes.map((n) => (
+                    <p key={n} className="note">{n}</p>
+                  ))}
+                  <ol className="assignments">
+                    {play.assignments.map((a) => (
+                      <li
+                        key={a.position}
+                        className={`${ROLE_CLASS[a.role.kind]}${highlight === a.position ? ' hot' : ''}`}
+                        onMouseEnter={() => setHighlight(a.position)}
+                        onMouseLeave={() => setHighlight(null)}
+                      >
+                        <span className="badge">{a.position}</span>
+                        <div>
+                          <strong>
+                            {ROLE_LABELS[a.role.kind]}
+                            {'base' in a.role && a.role.base ? ` ${a.role.base}` : ''}
+                            {'fielder' in a.role && a.role.fielder ? ` the ${a.role.fielder}` : ''}
+                          </strong>
+                          <p>{a.why}</p>
+                          <code className="rule">{a.ruleId}</code>
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
               )}
             </>
           )}

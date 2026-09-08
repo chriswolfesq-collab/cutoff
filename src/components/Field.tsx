@@ -1,6 +1,8 @@
+import type React from 'react';
 import {
   FIELD_CONFIGS,
   bases,
+  dist,
   fenceCurve,
   fencePoint,
   infieldArc,
@@ -9,7 +11,9 @@ import {
   type Level,
   type Point,
 } from '../field/geometry';
-import { alignment, POSITIONS, POSITION_NUMBERS, type Posture } from '../field/alignments';
+import { alignment, POSITIONS, POSITION_NUMBERS, type Position, type Posture } from '../field/alignments';
+import type { ResolvedPlay } from '../field/assignment';
+import { ROLE_CLASS } from './roleStyles';
 import ZoneOverlay from './ZoneOverlay';
 
 /** Feet -> SVG user units. Only the y-axis flips; 1 unit stays 1 foot. */
@@ -42,25 +46,30 @@ export default function Field({
   posture = 'normal',
   showZones = false,
   pick,
+  play,
+  highlight,
   onPick,
+  onHighlight,
 }: {
   level: Level;
   posture?: Posture;
   showZones?: boolean;
   pick?: Point | null;
+  play?: ResolvedPlay | null;
+  highlight?: Position | null;
   onPick?: (p: Point) => void;
+  onHighlight?: (p: Position | null) => void;
 }) {
   const cfg = FIELD_CONFIGS[level];
   const b = bases(cfg);
   const mound = moundCenter(cfg);
-  const spots = alignment(level, posture);
+  const start = alignment(level, posture);
 
   const poleL = fencePoint(cfg, -FOUL_ANGLE);
   const poleR = fencePoint(cfg, FOUL_ANGLE);
   const fence = fenceCurve(cfg);
   const arc = infieldArc(cfg);
 
-  // Fair territory: up the left line, around the fence, back down the right line.
   const fairPath = path([b.home, poleL, ...fence, poleR], true);
   const dirtPath = path([...arc, b.home], true);
 
@@ -70,10 +79,11 @@ export default function Field({
   const viewBox = `${-maxX} ${-maxY} ${2 * maxX} ${maxY + 60}`;
 
   const m = toScreen(mound);
-  // Scale-independent sizing, so youth and adult fields read identically.
   const unit = cfg.baseDistance / 90;
   const baseSize = 7 * unit;
   const r = 9 * unit;
+
+  const byPosition = new Map(play?.assignments.map((a) => [a.position, a]));
 
   // Screen pixels -> viewBox units -> field feet. The viewBox is already in
   // feet, so the only correction is the y flip.
@@ -101,19 +111,27 @@ export default function Field({
         <clipPath id="fair-territory">
           <path d={fairPath} />
         </clipPath>
+        <marker
+          id="throw-head"
+          viewBox="0 0 10 10"
+          refX="9"
+          refY="5"
+          markerWidth="5"
+          markerHeight="5"
+          orient="auto-start-reverse"
+        >
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--throw)" />
+        </marker>
       </defs>
 
       <path d={fairPath} className="grass" />
 
-      {/* Dirt is clipped to fair territory so it can't spill over the lines. */}
       <g clipPath="url(#fair-territory)">
         <path d={dirtPath} className="dirt" />
         <circle cx={m.x} cy={m.y} r={cfg.moundRadius} className="dirt-light" />
       </g>
 
-      {/* The infield is all dirt, so the diamond needs an outline to read. */}
       <path d={path([b.home, b.first, b.second, b.third], true)} className="diamond" />
-
       <path d={path([b.home, poleL])} className="foul-line" />
       <path d={path([b.home, poleR])} className="foul-line" />
       <path d={path(fence)} className="fence" />
@@ -125,6 +143,33 @@ export default function Field({
       <Base at={b.third} size={baseSize} />
       <circle cx={0} cy={0} r={baseSize * 0.55} className="base" />
 
+      {/* Routes: where each fielder is coming from. */}
+      {play &&
+        play.assignments.map((a) => {
+          const from = start[a.position];
+          if (dist(from, a.target) < 6 * unit) return null;
+          return (
+            <path
+              key={`route-${a.position}`}
+              d={path([from, a.target])}
+              className={`route ${ROLE_CLASS[a.role.kind]}${highlight === a.position ? ' hot' : ''}`}
+            />
+          );
+        })}
+
+      {play?.throws.map((t) => {
+        const from = byPosition.get(t.from)?.target;
+        if (!from) return null;
+        return (
+          <path
+            key={`throw-${t.from}-${t.to}`}
+            d={path([from, b[t.to]])}
+            className="throw"
+            markerEnd="url(#throw-head)"
+          />
+        );
+      })}
+
       {pick && (
         <g className="pick" pointerEvents="none">
           <circle cx={pick.x} cy={-pick.y} r={r * 0.85} className="pick-ring" />
@@ -133,9 +178,17 @@ export default function Field({
       )}
 
       {POSITIONS.map((pos) => {
-        const s = toScreen(spots[pos]);
+        const a = byPosition.get(pos);
+        const at = a ? a.target : start[pos];
+        const s = toScreen(at);
+        const cls = a ? ROLE_CLASS[a.role.kind] : '';
         return (
-          <g key={pos} className="fielder">
+          <g
+            key={pos}
+            className={`fielder ${cls}${highlight === pos ? ' hot' : ''}`}
+            onMouseEnter={() => onHighlight?.(pos)}
+            onMouseLeave={() => onHighlight?.(null)}
+          >
             <circle cx={s.x} cy={s.y} r={r} />
             <text x={s.x} y={s.y} dy={r * 0.36} fontSize={r * 1.05}>
               {POSITION_NUMBERS[pos]}

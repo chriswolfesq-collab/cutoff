@@ -281,3 +281,86 @@ code {
   color: #10240f;
   font-weight: 600;
 }
+
+/* --- resolved play --- */
+
+.route {
+  fill: none;
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+  opacity: 0.75;
+}
+
+.route.hot { stroke-width: 3.5; opacity: 1; }
+
+.throw {
+  fill: none;
+  stroke: var(--throw);
+  stroke-width: 2.5;
+}
+
+.fielder.role-primary circle { fill: var(--r-primary); }
+.fielder.role-cover circle { fill: var(--r-cover); }
+.fielder.role-backup circle { fill: var(--r-backup); }
+.fielder.role-cut circle { fill: var(--r-cut); }
+.fielder.role-watch circle { fill: var(--r-watch); }
+
+.fielder.role-watch { opacity: 0.55; }
+.fielder.hot circle { stroke: #fff; stroke-width: 3; }
+.fielder { cursor: default; }
+
+.route.role-primary { stroke: var(--r-primary); }
+.route.role-cover { stroke: var(--r-cover); }
+.route.role-backup { stroke: var(--r-backup); }
+.route.role-cut { stroke: var(--r-cut); }
+.route.role-watch { stroke: var(--r-watch); opacity: 0.35; }
+
+.result { margin-top: 0.9rem; }
+
+.note:first-child {
+  border-left-color: var(--warn);
+  color: var(--warn);
+}
+
+.note {
+  margin: 0 0 0.5rem;
+  color: var(--fg);
+  font-size: 0.84rem;
+  padding-left: 0.6rem;
+  border-left: 2px solid var(--line);
+}
+
+.assignments {
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.assignments li {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  padding: 0.4rem 0.45rem;
+  border-radius: 7px;
+  border: 1px solid transparent;
+}
+
+.assignments li.hot {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--line);
+}
+
+.assignments li.role-watch { opacity: 0.6; }
+.assignments strong { font-size: 0.82rem; }
+.assignments p { margin: 0.15rem 0 0; color: var(--fg-dim); font-size: 0.78rem; }
+.assignments .rule { font-size: 0.68rem; opacity: 0.55; }
+.assignments .badge { width: 1.7rem; height: 1.7rem; font-size: 0.68rem; }
+
+.assignments li.role-primary .badge { background: var(--r-primary); }
+.assignments li.role-cover .badge { background: var(--r-cover); }
+.assignments li.role-backup .badge { background: var(--r-backup); }
+.assignments li.role-cut .badge { background: var(--r-cut); }
+.assignments li.role-watch .badge { background: var(--r-watch); }
