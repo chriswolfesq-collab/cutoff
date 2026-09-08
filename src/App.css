@@ -1,0 +1,105 @@
+.app {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+h1 {
+  font-size: 1.35rem;
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.segmented button {
+  border: 0;
+  background: transparent;
+  color: var(--fg-dim);
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.4rem 0.95rem;
+  cursor: pointer;
+}
+
+.segmented button[aria-pressed='true'] {
+  background: var(--accent);
+  color: #10240f;
+  font-weight: 600;
+}
+
+.field {
+  width: 100%;
+  height: auto;
+  max-height: calc(100dvh - 160px);
+  display: block;
+}
+
+.grass { fill: var(--grass); }
+.dirt { fill: var(--dirt); }
+
+.dirt-light { fill: var(--dirt-light); }
+
+.diamond {
+  fill: none;
+  stroke: var(--chalk);
+  stroke-width: 1.6;
+  opacity: 0.55;
+}
+
+.foul-line,
+.fence {
+  fill: none;
+  stroke: var(--chalk);
+  stroke-width: 2;
+}
+
+.fence {
+  stroke: var(--fence);
+  stroke-width: 3;
+}
+
+.base { fill: var(--chalk); }
+
+.fielder circle {
+  fill: var(--fielder);
+  stroke: #0d1b0c;
+  stroke-width: 1.5;
+}
+
+.fielder text {
+  fill: #0d1b0c;
+  text-anchor: middle;
+  font-weight: 700;
+  font-family: inherit;
+}
+
+.fielder .fielder-label {
+  fill: var(--fg);
+  font-weight: 600;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.55);
+  stroke-width: 2.5;
+}
+
+footer {
+  color: var(--fg-dim);
+  font-size: 0.85rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
