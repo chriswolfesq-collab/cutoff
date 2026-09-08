@@ -10,6 +10,9 @@
   --fence: #4e5c44;
   --fielder: #e7c94a;
   --accent: #7fd455;
+  --panel: #191e15;
+  --pick: #ff6b4a;
+  --warn: #e0a94a;
 
   font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   color-scheme: dark;

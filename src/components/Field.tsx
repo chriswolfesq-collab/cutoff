@@ -10,6 +10,7 @@ import {
   type Point,
 } from '../field/geometry';
 import { alignment, POSITIONS, POSITION_NUMBERS, type Posture } from '../field/alignments';
+import ZoneOverlay from './ZoneOverlay';
 
 /** Feet -> SVG user units. Only the y-axis flips; 1 unit stays 1 foot. */
 const toScreen = (p: Point): Point => ({ x: p.x, y: -p.y });
@@ -39,9 +40,15 @@ function Base({ at, size }: { at: Point; size: number }) {
 export default function Field({
   level,
   posture = 'normal',
+  showZones = false,
+  pick,
+  onPick,
 }: {
   level: Level;
   posture?: Posture;
+  showZones?: boolean;
+  pick?: Point | null;
+  onPick?: (p: Point) => void;
 }) {
   const cfg = FIELD_CONFIGS[level];
   const b = bases(cfg);
@@ -68,8 +75,28 @@ export default function Field({
   const baseSize = 7 * unit;
   const r = 9 * unit;
 
+  // Screen pixels -> viewBox units -> field feet. The viewBox is already in
+  // feet, so the only correction is the y flip.
+  const handleClick = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!onPick) return;
+    const svg = e.currentTarget;
+    const p = svg.createSVGPoint();
+    p.x = e.clientX;
+    p.y = e.clientY;
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return;
+    const loc = p.matrixTransform(ctm.inverse());
+    onPick({ x: loc.x, y: -loc.y });
+  };
+
   return (
-    <svg className="field" viewBox={viewBox} role="img" aria-label={`${level} field`}>
+    <svg
+      className={`field${onPick ? ' pickable' : ''}`}
+      viewBox={viewBox}
+      role={onPick ? undefined : 'img'}
+      aria-label={`${level} field`}
+      onClick={handleClick}
+    >
       <defs>
         <clipPath id="fair-territory">
           <path d={fairPath} />
@@ -91,10 +118,19 @@ export default function Field({
       <path d={path([b.home, poleR])} className="foul-line" />
       <path d={path(fence)} className="fence" />
 
+      {showZones && <ZoneOverlay level={level} />}
+
       <Base at={b.first} size={baseSize} />
       <Base at={b.second} size={baseSize} />
       <Base at={b.third} size={baseSize} />
       <circle cx={0} cy={0} r={baseSize * 0.55} className="base" />
+
+      {pick && (
+        <g className="pick" pointerEvents="none">
+          <circle cx={pick.x} cy={-pick.y} r={r * 0.85} className="pick-ring" />
+          <circle cx={pick.x} cy={-pick.y} r={r * 0.3} className="pick-dot" />
+        </g>
+      )}
 
       {POSITIONS.map((pos) => {
         const s = toScreen(spots[pos]);

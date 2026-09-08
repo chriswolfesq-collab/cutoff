@@ -71,11 +71,62 @@ const NORMAL: Record<Level, Alignment> = {
   },
 };
 
+/**
+ * Postures are stored as deltas from normal, in feet at adult scale, rather
+ * than as full position tables. Six postures x two levels x nine fielders is a
+ * lot of coordinates to keep honest; a delta says what actually changes.
+ *
+ * Positive x is toward first base, positive y is toward center field, so a
+ * negative y is a step in toward the plate.
+ */
+type Shift = Partial<Record<Position, Point>>;
+
+const SHIFTS: Record<Exclude<Posture, 'normal'>, Shift> = {
+  // Middle infielders cheat toward second and a step in, to turn two.
+  doublePlay: {
+    '2B': { x: -9, y: -7 },
+    SS: { x: 9, y: -7 },
+  },
+  // Everyone at the edge of the dirt: cut the run off at the plate.
+  infieldIn: {
+    '1B': { x: -3, y: -20 },
+    '2B': { x: -2, y: -30 },
+    SS: { x: 2, y: -30 },
+    '3B': { x: 3, y: -20 },
+  },
+  // Corners charge the bunt; the middle infielders cover behind them.
+  cornersIn: {
+    '1B': { x: -5, y: -27 },
+    '3B': { x: 5, y: -27 },
+    '2B': { x: -6, y: -6 },
+    SS: { x: 4, y: -6 },
+  },
+  // Deeper and toward the lines — concede the single, take away the double.
+  noDoubles: {
+    LF: { x: -18, y: 20 },
+    CF: { x: 0, y: 18 },
+    RF: { x: 18, y: 20 },
+  },
+  // Corners hug the lines so nothing gets by them for extra bases.
+  guardLines: {
+    '1B': { x: 9, y: -3 },
+    '3B': { x: -9, y: -3 },
+  },
+};
+
 export function alignment(level: Level, posture: Posture = 'normal'): Alignment {
-  if (posture !== 'normal') {
-    // Postures land in phase 2 with the rules engine; until then every
-    // posture renders as normal rather than as a wrong guess.
-    return NORMAL[level];
-  }
-  return NORMAL[level];
+  const base = NORMAL[level];
+  if (posture === 'normal') return base;
+
+  // Deltas are authored at adult scale; a 60' field shifts proportionally less.
+  const u = level === 'youth' ? 60 / 90 : 1;
+  const shift = SHIFTS[posture];
+
+  return Object.fromEntries(
+    POSITIONS.map((pos) => {
+      const d = shift[pos];
+      const p = base[pos];
+      return [pos, d ? { x: p.x + d.x * u, y: p.y + d.y * u } : p];
+    }),
+  ) as Alignment;
 }
