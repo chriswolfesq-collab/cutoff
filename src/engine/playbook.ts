@@ -288,15 +288,20 @@ function readsSection(): string {
 
   for (const c of cases) {
     const play = run(c.spot, c.over);
-    if (!play.branch) {
+    if (!play.branches?.length) {
       out.push(`### ${c.title}`, '', 'No read — the throw is decided.', '');
       continue;
     }
 
     const main = play.throws.map((t) => BASE_LABEL[t.to]).join(', ') || 'no throw';
-    const other = play.branch.throws.map((t) => BASE_LABEL[t.to]).join(', ') || 'no throw';
-    const changed = play.assignments.filter((a) => a.alternative);
-    const head = `Plays for a throw to **${main}**. ${play.branch.when} — **${other}**.`;
+    const lines = play.branches
+      .map((b) => {
+        const to = b.throws.map((t) => BASE_LABEL[t.to]).join(', ') || 'no throw';
+        return `${b.when} — **${to}**`;
+      })
+      .join('; ');
+    const changed = play.assignments.filter((a) => a.alternatives?.length);
+    const head = `Plays for a throw to **${main}**. ${lines}.`;
 
     if (changed.length === 0) {
       out.push(`### ${c.title}`, '', head, '',
@@ -313,7 +318,10 @@ function readsSection(): string {
       '| Fielder | Plays for | Reads it the other way |',
       '| --- | --- | --- |',
       ...changed.map(
-        (a) => `| ${a.position} | ${roleKey(a.role)} | ${roleKey(a.alternative!.role)} |`,
+        (a) =>
+          `| ${a.position} | ${roleKey(a.role)} | ${a
+            .alternatives!.map((alt) => `${roleKey(alt.role)} _(${alt.when.toLowerCase()})_`)
+            .join('<br>')} |`,
       ),
       '',
     );
@@ -414,7 +422,7 @@ function firstThirdSection(): string {
     const find = (test: (a: Assignment) => boolean) =>
       play.assignments.filter(test).map((a) => a.position).join(', ') || '—';
 
-    const cut = play.assignments.find((a) => a.alternative);
+    const cut = play.assignments.find((a) => a.alternatives?.length);
     return `| ${CALL_NAMES[call]} | ${find((a) => a.role.kind === 'throws')} | ${find(
       (a) => a.role.kind === 'cover' && a.role.base === 'second',
     )} | ${cut ? cut.position : '—'} | ${find((a) => a.role.kind === 'backupBase')} |`;
@@ -495,15 +503,19 @@ only gets through one section, make it this one.
 14. **In a rundown the ball starts with whoever took the throw** — he is the
     one who runs the man back, and after his throw he goes to the back of the
     line at the bag he threw to (\`rundown.rotate\`). One throw is the target.
-15. **A read has exactly two lines** — the runner goes, or he holds. There is no
-    third option, and the defence is always shown playing for the runner going.
-    See Reads below.
+15. **A play can carry more than one read.** A base hit with a man on second
+    carries two: whether the lead runner holds at third, and whether the
+    batter-runner rounds first behind the throw. Each fielder is shown every
+    line he has a different job on. Whether that is one thing too many to put in
+    front of a player at once is a fair objection.
 
 ## What is not modelled
 
-The batter-runner taking an extra base while the throw is elsewhere. A rundown
-between home and first is not offered either — it needs a dropped third strike
-or a misplayed bunt, not a batted ball being fielded.
+A rundown between home and first is not offered — it needs a dropped third
+strike or a misplayed bunt, not a batted ball being fielded. The first baseman
+never trails a runner on a base hit or a steal, which some programmes teach.
+Beyond that, what is here is what is here: the gaps now are wrong calls rather
+than missing ones, which is what this document is for.
 `;
 
 export function buildPlaybook(): string {
@@ -541,9 +553,9 @@ export function buildPlaybook(): string {
     '',
     '## Reads',
     '',
-    'Some throws are not decided at contact. These plays resolve twice — the',
-    'line the defence plays for, and the line it plays for if the runner holds —',
-    'and any fielder whose job differs between the two has to read the throw.',
+    'Some throws are not decided at contact. These plays resolve once for every',
+    'line the throw could take, and any fielder whose job differs between them',
+    'has to read it. A play can carry more than one read at a time.',
     '',
     readsSection(),
     '## Pickoffs',

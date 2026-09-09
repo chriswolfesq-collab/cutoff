@@ -307,7 +307,7 @@ function layerSpacing(ctx: Ctx) {
 }
 
 /** One pass of the layers, on whichever line of the throw plan was asked for. */
-function resolveOnce(input: PlayInput, useBranch: boolean): Ctx {
+function resolveOnce(input: PlayInput, branchIndex: number | null): Ctx {
   const { level, posture } = input.situation;
   const cfg = FIELD_CONFIGS[level];
 
@@ -325,7 +325,7 @@ function resolveOnce(input: PlayInput, useBranch: boolean): Ctx {
   };
 
   layerPrimary(ctx);
-  layerThrows(ctx, useBranch);
+  layerThrows(ctx, branchIndex);
   layerCutoffRelay(ctx);
   layerCoverage(ctx);
   layerBackups(ctx);
@@ -336,7 +336,7 @@ function resolveOnce(input: PlayInput, useBranch: boolean): Ctx {
 }
 
 export function resolvePlay(input: PlayInput): ResolvedPlay {
-  const main = resolveOnce(input, false);
+  const main = resolveOnce(input, null);
   const assignments = POSITIONS.map((p) => main.out.get(p)!);
   const cfg = FIELD_CONFIGS[input.situation.level];
 
@@ -348,11 +348,14 @@ export function resolvePlay(input: PlayInput): ResolvedPlay {
     return rundown ? { ...play, rundown } : play;
   };
 
-  if (main.branchWhen) {
-    // Resolve the other line in full and diff it. Anything that moves or
-    // changes job is something this fielder has to read the throw for.
-    const alt = resolveOnce(input, true);
-    const when = main.branchWhen;
+  // Resolve every other line the throw could take and diff it against the one
+  // being played for. Anything that moves or changes job is something this
+  // fielder has to read the throw for.
+  const branches: NonNullable<ResolvedPlay['branches']> = [];
+
+  (main.branches ?? []).forEach(({ when }, i) => {
+    const alt = resolveOnce(input, i);
+    branches.push({ when, throws: alt.throws });
 
     for (const a of assignments) {
       const b = alt.out.get(a.position);
@@ -366,18 +369,12 @@ export function resolvePlay(input: PlayInput): ResolvedPlay {
       const movedFar = dist(a.target, b.target) > 10 * main.u;
       if (roleKey(a.role) === roleKey(b.role) && !movedFar) continue;
 
-      a.alternative = { when, role: b.role, target: b.target, why: b.why, ruleId: b.ruleId };
+      a.alternatives = [
+        ...(a.alternatives ?? []),
+        { when, role: b.role, target: b.target, why: b.why, ruleId: b.ruleId },
+      ];
     }
-
-    return withRundown({
-      assignments,
-      throws: main.throws,
-      notes: main.notes,
-      ballAt: main.ball,
-      phases: buildPhases(main),
-      branch: { when, throws: alt.throws },
-    });
-  }
+  });
 
   return withRundown({
     assignments,
@@ -385,5 +382,6 @@ export function resolvePlay(input: PlayInput): ResolvedPlay {
     notes: main.notes,
     ballAt: main.ball,
     phases: buildPhases(main),
+    ...(branches.length > 0 ? { branches } : {}),
   });
 }

@@ -50,15 +50,19 @@ only gets through one section, make it this one.
 14. **In a rundown the ball starts with whoever took the throw** — he is the
     one who runs the man back, and after his throw he goes to the back of the
     line at the bag he threw to (`rundown.rotate`). One throw is the target.
-15. **A read has exactly two lines** — the runner goes, or he holds. There is no
-    third option, and the defence is always shown playing for the runner going.
-    See Reads below.
+15. **A play can carry more than one read.** A base hit with a man on second
+    carries two: whether the lead runner holds at third, and whether the
+    batter-runner rounds first behind the throw. Each fielder is shown every
+    line he has a different job on. Whether that is one thing too many to put in
+    front of a player at once is a fair objection.
 
 ## What is not modelled
 
-The batter-runner taking an extra base while the throw is elsewhere. A rundown
-between home and first is not offered either — it needs a dropped third strike
-or a misplayed bunt, not a batted ball being fielded.
+A rundown between home and first is not offered — it needs a dropped third
+strike or a misplayed bunt, not a batted ball being fielded. The first baseman
+never trails a runner on a base hit or a steal, which some programmes teach.
+Beyond that, what is here is what is here: the gaps now are wrong calls rather
+than missing ones, which is what this document is for.
 
 ## Youth and Adult
 
@@ -164,9 +168,9 @@ Fly ball caught in centre field, youth field. A throw here means somebody tagged
 
 ## Reads
 
-Some throws are not decided at contact. These plays resolve twice — the
-line the defence plays for, and the line it plays for if the runner holds —
-and any fielder whose job differs between the two has to read the throw.
+Some throws are not decided at contact. These plays resolve once for every
+line the throw could take, and any fielder whose job differs between them
+has to read it. A play can carry more than one read at a time.
 
 ### Base hit to left, man on first
 
@@ -174,17 +178,18 @@ Plays for a throw to **3rd**. If he stops at second — **2nd**.
 
 | Fielder | Plays for | Reads it the other way |
 | --- | --- | --- |
-| RF | watch | backup:second |
+| RF | watch | backup:second _(if he stops at second)_ |
 
 ### Base hit to left, man on second
 
-Plays for a throw to **home**. If he holds at third — **3rd**.
+Plays for a throw to **home**. If he holds at third — **3rd**; If the batter-runner rounds hard — **2nd**.
 
 | Fielder | Plays for | Reads it the other way |
 | --- | --- | --- |
-| P | backup:home | backup:third |
-| 3B | watch | cover:third |
-| SS | watch | cutoff:third |
+| P | backup:home | backup:third _(if he holds at third)_ |
+| 3B | watch | cover:third _(if he holds at third)_ |
+| SS | watch | cutoff:third _(if he holds at third)_ |
+| RF | watch | backup:second _(if the batter-runner rounds hard)_ |
 
 ### Ground ball to short, man on third, infield in
 
@@ -192,19 +197,21 @@ Plays for a throw to **home**. If he holds at third — **1st**.
 
 | Fielder | Plays for | Reads it the other way |
 | --- | --- | --- |
-| C | cover:home | backup:first |
-| 2B | watch | cover:second |
-| RF | watch | backup:first |
+| C | cover:home | backup:first _(if he holds at third)_ |
+| 2B | watch | cover:second _(if he holds at third)_ |
+| RF | watch | backup:first _(if he holds at third)_ |
 
 ### Ball to the wall, man on second
 
-Plays for a throw to **home**. If the lead runner holds at third — **3rd**.
+Plays for a throw to **home**. If the lead runner holds at third — **3rd**; If the batter-runner rounds hard — **2nd**.
 
 | Fielder | Plays for | Reads it the other way |
 | --- | --- | --- |
-| P | backup:home | backup:third |
-| 3B | watch | cover:third |
-| SS | relay:home | relay:third |
+| P | backup:home | backup:third _(if the lead runner holds at third)_<br>cover:second _(if the batter-runner rounds hard)_ |
+| 2B | cover:second | cover:second _(if the batter-runner rounds hard)_ |
+| 3B | watch | cover:third _(if the lead runner holds at third)_ |
+| SS | relay:home | relay:third _(if the lead runner holds at third)_<br>relay:second _(if the batter-runner rounds hard)_ |
+| RF | watch | backup:second _(if the batter-runner rounds hard)_ |
 
 ### Fly ball caught deep in centre, man on third
 

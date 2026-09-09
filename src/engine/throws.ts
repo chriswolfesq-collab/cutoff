@@ -34,17 +34,29 @@ export function forcedBases(r: Runners) {
 
 const anyRunner = (r: Runners) => r.first || r.second || r.third;
 
+/**
+ * The read nobody watches for. While the throw is going to the plate or to
+ * third, the batter-runner is rounding first behind it — and the man cutting it
+ * is the only one in a position to take him.
+ */
+const BATTER_ROUNDS: Branch = {
+  when: 'If the batter-runner rounds hard',
+  throws: [{ to: 'second', why: 'Cut it and take him at second instead.' }],
+};
+
 type Dest = { to: BaseId; why: string };
+
+export type Branch = { when: string; throws: Dest[] };
 
 export type ThrowPlan = {
   throws: Dest[];
   notes: string[];
-  /** The other line, and the read that chooses it. */
-  branch?: { when: string; throws: Dest[] };
+  /** Every other line the throw could take, and the read that chooses it. */
+  branches: Branch[];
 };
 
-const plan = (throws: Dest[], notes: string[] = [], branch?: ThrowPlan['branch']): ThrowPlan => ({
-  throws, notes, branch,
+const plan = (throws: Dest[], notes: string[] = [], branches: Branch[] = []): ThrowPlan => ({
+  throws, notes, branches,
 });
 
 export function planThrows(ctx: Ctx): ThrowPlan {
@@ -70,14 +82,14 @@ export function planThrows(ctx: Ctx): ThrowPlan {
         return plan(
           [{ to: 'home', why: 'Caught with a runner on third — he tags, play at the plate.' }],
           [],
-          { when: 'If he does not tag', throws: [] },
+          [{ when: 'If he does not tag', throws: [] }],
         );
       }
       if (runners.second && deep) {
         return plan(
           [{ to: 'third', why: 'Deep enough for the runner on second to tag — play at third.' }],
           [],
-          { when: 'If he does not tag', throws: [] },
+          [{ when: 'If he does not tag', throws: [] }],
         );
       }
       return plan([], ['Caught — batter is out, no throw.']);
@@ -88,10 +100,13 @@ export function planThrows(ctx: Ctx): ThrowPlan {
         return plan(
           [{ to: 'home', why: 'Ball to the wall with a runner on — relay home.' }],
           [],
-          {
-            when: 'If the lead runner holds at third',
-            throws: [{ to: 'third', why: 'Relay to third instead — he stopped.' }],
-          },
+          [
+            {
+              when: 'If the lead runner holds at third',
+              throws: [{ to: 'third', why: 'Relay to third instead — he stopped.' }],
+            },
+            BATTER_ROUNDS,
+          ],
         );
       }
       return plan([{ to: 'third', why: 'Ball to the wall — batter is going for extra bases.' }]);
@@ -104,30 +119,37 @@ export function planThrows(ctx: Ctx): ThrowPlan {
         return plan(
           [{ to: 'home', why: 'Base hit with a runner in scoring position — play at the plate.' }],
           [],
-          {
-            when: 'If he holds at third',
-            throws: [{ to: 'third', why: 'He stopped at third — throw in behind him.' }],
-          },
+          [
+            {
+              when: 'If he holds at third',
+              throws: [{ to: 'third', why: 'He stopped at third — throw in behind him.' }],
+            },
+            BATTER_ROUNDS,
+          ],
         );
       }
       if (runners.third) {
         return plan(
           [{ to: 'home', why: 'Base hit with a man on third — play at the plate.' }],
           [],
-          {
-            when: 'If he holds at third',
-            throws: [{ to: 'second', why: 'Run concedes — keep the batter out of scoring position.' }],
-          },
+          [
+            {
+              when: 'If he holds at third',
+              throws: [{ to: 'second', why: 'Run concedes — keep the batter out of scoring position.' }],
+            },
+          ],
         );
       }
       if (runners.first) {
         return plan(
           [{ to: 'third', why: 'Base hit with a man on first — he is going first to third.' }],
           [],
-          {
-            when: 'If he stops at second',
-            throws: [{ to: 'second', why: 'He held up — the play is on the bag behind him.' }],
-          },
+          [
+            {
+              when: 'If he stops at second',
+              throws: [{ to: 'second', why: 'He held up — the play is on the bag behind him.' }],
+            },
+          ],
         );
       }
       return plan([{ to: 'second', why: 'Base hit — keep him to a single.' }]);
@@ -155,11 +177,19 @@ export function planThrows(ctx: Ctx): ThrowPlan {
           },
         ];
         if (forced.home) line.push({ to: 'first', why: 'Then across to first for two.' });
-        return plan(line, [], forced.home ? undefined : {
-          // An unforced runner has to commit; if he freezes, the play is at first.
-          when: 'If he holds at third',
-          throws: [{ to: 'first', why: 'Look him back and take the out at first.' }],
-        });
+        return plan(
+          line,
+          [],
+          forced.home
+            ? []
+            : [
+                // An unforced runner has to commit; if he freezes, the play is at first.
+                {
+                  when: 'If he holds at third',
+                  throws: [{ to: 'first', why: 'Look him back and take the out at first.' }],
+                },
+              ],
+        );
       }
 
       if (outs === 2) return plan([{ to: 'first', why: 'Two out — take the sure out at first.' }]);
@@ -191,11 +221,11 @@ export function planThrows(ctx: Ctx): ThrowPlan {
 }
 
 /** Install one line of the plan onto the context. */
-export function layerThrows(ctx: Ctx, useBranch = false) {
+export function layerThrows(ctx: Ctx, branchIndex: number | null = null) {
   const p = planThrows(ctx);
-  const line = useBranch && p.branch ? p.branch.throws : p.throws;
+  const line = branchIndex === null ? p.throws : (p.branches[branchIndex]?.throws ?? p.throws);
 
-  ctx.branchWhen = p.branch?.when;
+  ctx.branches = p.branches.map((b) => ({ when: b.when }));
   ctx.notes.push(...p.notes);
 
   let unassisted = false;

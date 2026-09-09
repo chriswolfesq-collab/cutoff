@@ -198,10 +198,8 @@ export default function Field({
       {/* Where a fielder goes instead if the throw is read the other way.
           Hollow and dashed: this is a job he may not end up with. */}
       {!atSet &&
-        (override ?? play?.assignments ?? [])
-          .filter((a) => a.alternative)
-          .map((a) => {
-            const alt = a.alternative!;
+        (override ?? play?.assignments ?? []).flatMap((a) =>
+          (a.alternatives ?? []).map((alt, i) => {
             const to = toScreen(alt.target);
             // Some reads move a man; some only change what he does from where he
             // already is. A ghost hidden under his own marker reads as nothing,
@@ -209,12 +207,12 @@ export default function Field({
             const moves = dist(a.target, alt.target) > 5 * unit;
             return (
               <g
-                key={`alt-${a.position}`}
+                key={`alt-${a.position}-${i}`}
                 className={`alt ${ROLE_CLASS[alt.role.kind]}${moves ? '' : ' halo'}`}
                 pointerEvents="none"
               >
                 {moves && <path d={path([a.target, alt.target])} />}
-                <circle cx={to.x} cy={to.y} r={moves ? r : r * 1.6} />
+                <circle cx={to.x} cy={to.y} r={moves ? r : r * (1.6 + i * 0.35)} />
                 {moves && (
                   <text x={to.x} y={to.y} dy={r * 0.36} fontSize={r * 1.05}>
                     {POSITION_NUMBERS[a.position]}
@@ -222,7 +220,8 @@ export default function Field({
                 )}
               </g>
             );
-          })}
+          }),
+        )}
 
       {/* Positions live on a transform so the browser can tween them. */}
       {POSITIONS.map((pos) => {

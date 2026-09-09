@@ -56,6 +56,20 @@ function leadOff(ctx: Ctx, id: RunnerId): Point {
   return along(ctx.bags[from], ctx.bags[back], 14 * ctx.u);
 }
 
+/**
+ * While the throw is going to the plate or to third, the batter-runner is
+ * rounding first behind it. Drawing him stopped on the bag hides the read the
+ * cut man is out there to make.
+ */
+function batterRounds(ctx: Ctx): boolean {
+  return (
+    ctx.throws.length > 0 &&
+    !isInfieldBand(ctx.zone.band) &&
+    ctx.input.outcome !== 'caught' &&
+    !ctx.throws.some((t) => t.to === 'second' || t.to === 'first')
+  );
+}
+
 function spots(ctx: Ctx, going: Set<RunnerId>, progress: number): RunnerSpot[] {
   const { runners } = ctx.input.situation;
   const present: RunnerId[] = ['batter'];
@@ -68,7 +82,11 @@ function spots(ctx: Ctx, going: Set<RunnerId>, progress: number): RunnerSpot[] {
 
     const { from, to } = ROUTE[id];
     const a = ctx.bags[from];
-    const b = ctx.bags[to];
+    // A rounding batter cuts the corner rather than stopping on the bag.
+    const b =
+      id === 'batter' && batterRounds(ctx)
+        ? along(ctx.bags.first, ctx.bags.second, 22 * ctx.u)
+        : ctx.bags[to];
     const at = { x: a.x + (b.x - a.x) * progress, y: a.y + (b.y - a.y) * progress };
     return { id, at, moving: progress > 0 && progress < 1 };
   });

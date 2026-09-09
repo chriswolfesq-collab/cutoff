@@ -49,14 +49,14 @@ describe('golden corpus', () => {
       }
 
       if (scenario.branchWhen) {
-        expect(play.branch?.when).toBe(scenario.branchWhen);
+        expect(play.branches?.map((b) => b.when)).toContain(scenario.branchWhen);
       }
 
       if (scenario.alternatives) {
         const actualAlts = Object.fromEntries(
           play.assignments
-            .filter((a) => a.alternative)
-            .map((a) => [a.position, roleKey(a.alternative!.role)]),
+            .filter((a) => a.alternatives?.length)
+            .map((a) => [a.position, a.alternatives!.map((x) => roleKey(x.role)).join(' | ')]),
         );
         expect(actualAlts).toEqual(scenario.alternatives);
       }

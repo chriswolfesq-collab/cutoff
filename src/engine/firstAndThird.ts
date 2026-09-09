@@ -153,13 +153,15 @@ export function buildFirstAndThird(
         phase: 1,
         why: 'Stays in the line of the throw and watches the runner on third.',
         ruleId: 'ft.cut.pitcher',
-        alternative: {
-          when: 'If the runner on third breaks',
-          role: { kind: 'throws', to: 'home' },
-          target: upTheMiddle(50 * u),
-          why: 'Cuts it and throws home.',
-          ruleId: 'ft.cut.home',
-        },
+        alternatives: [
+          {
+            when: 'If the runner on third breaks',
+            role: { kind: 'throws', to: 'home' },
+            target: upTheMiddle(50 * u),
+            why: 'Cuts it and throws home.',
+            ruleId: 'ft.cut.home',
+          },
+        ],
       });
     } else if (call === 'cutMiddle') {
       put(otherMiddle, {
@@ -168,13 +170,15 @@ export function buildFirstAndThird(
         phase: 1,
         why: 'Charges to meet the throw, so the cut is made nearer the plate and the throw home is shorter.',
         ruleId: 'ft.cut.middle',
-        alternative: {
-          when: 'If the runner on third breaks',
-          role: { kind: 'throws', to: 'home' },
-          target: upTheMiddle(72 * u),
-          why: 'Cuts it and throws home.',
-          ruleId: 'ft.cut.home',
-        },
+        alternatives: [
+          {
+            when: 'If the runner on third breaks',
+            role: { kind: 'throws', to: 'home' },
+            target: upTheMiddle(72 * u),
+            why: 'Cuts it and throws home.',
+            ruleId: 'ft.cut.home',
+          },
+        ],
       });
       put('P', {
         role: { kind: 'watch' },

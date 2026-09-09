@@ -251,21 +251,35 @@ describe(`resolver invariants over ${PLAYS.length} plays`, () => {
     assertNoFailures(failures);
   });
 
-  it('only records an alternative that is a real job', () => {
+  it('only records alternatives that are real jobs', () => {
     const failures: string[] = [];
     for (const p of PLAYS) {
       const play = resolvePlay(p);
+      const u = FIELD_CONFIGS[p.situation.level].baseDistance / 90;
       for (const a of play.assignments) {
-        if (!a.alternative) continue;
-        if (a.alternative.role.kind === 'watch') {
-          failures.push(`${label(p)}: ${a.position} alternative is doing nothing`);
+        for (const alt of a.alternatives ?? []) {
+          if (alt.role.kind === 'watch') {
+            failures.push(`${label(p)}: ${a.position} alternative is doing nothing`);
+          }
+          if (!alt.when.trim() || !alt.ruleId.trim()) {
+            failures.push(`${label(p)}: ${a.position} alternative has no read or rule`);
+          }
+          if (roleKey(alt.role) === roleKey(a.role) && dist(alt.target, a.target) <= 10 * u) {
+            failures.push(`${label(p)}: ${a.position} alternative is the same job in the same place`);
+          }
         }
-        if (!a.alternative.when.trim() || !a.alternative.ruleId.trim()) {
-          failures.push(`${label(p)}: ${a.position} alternative has no read or rule`);
-        }
-        if (roleKey(a.alternative.role) === roleKey(a.role) &&
-            dist(a.alternative.target, a.target) <= 10) {
-          failures.push(`${label(p)}: ${a.position} alternative is the same job in the same place`);
+      }
+    }
+    assertNoFailures(failures);
+  });
+
+  it('reads each branch at most once per fielder', () => {
+    const failures: string[] = [];
+    for (const p of PLAYS) {
+      for (const a of resolvePlay(p).assignments) {
+        const whens = (a.alternatives ?? []).map((x) => x.when);
+        if (new Set(whens).size !== whens.length) {
+          failures.push(`${label(p)}: ${a.position} has the same read twice`);
         }
       }
     }
@@ -276,13 +290,17 @@ describe(`resolver invariants over ${PLAYS.length} plays`, () => {
     const failures: string[] = [];
     for (const p of PLAYS) {
       const play = resolvePlay(p);
-      const withAlt = play.assignments.filter((a) => a.alternative);
-      if (withAlt.length > 0 && !play.branch) {
-        failures.push(`${label(p)}: alternatives with no branch`);
-      }
-      for (const a of withAlt) {
-        if (a.alternative!.when !== play.branch?.when) {
-          failures.push(`${label(p)}: ${a.position} reads a different branch`);
+      const reads = new Set((play.branches ?? []).map((b) => b.when));
+      for (const a of play.assignments) {
+        if (!a.alternatives?.length) continue;
+        if (reads.size === 0) {
+          failures.push(`${label(p)}: alternatives with no branch`);
+          break;
+        }
+        for (const alt of a.alternatives) {
+          if (!reads.has(alt.when)) {
+            failures.push(`${label(p)}: ${a.position} reads a branch the play does not carry`);
+          }
         }
       }
     }
@@ -294,9 +312,10 @@ describe(`resolver invariants over ${PLAYS.length} plays`, () => {
     for (const p of PLAYS) {
       const limit = FIELD_CONFIGS[p.situation.level].fence.center + 60;
       for (const a of resolvePlay(p).assignments) {
-        const t = a.alternative?.target;
-        if (t && (Math.hypot(t.x, t.y) > limit || t.y < -60)) {
-          failures.push(`${label(p)}: ${a.position} alternative off the field`);
+        for (const t of (a.alternatives ?? []).map((x) => x.target)) {
+          if (Math.hypot(t.x, t.y) > limit || t.y < -60) {
+            failures.push(`${label(p)}: ${a.position} alternative off the field`);
+          }
         }
       }
     }

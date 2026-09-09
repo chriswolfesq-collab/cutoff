@@ -6,6 +6,20 @@ fielders should be — who fields it, who covers, who cuts, who backs up.
 
 ## Status
 
+The batter-runner taking an extra base. While the throw is going to the plate or
+to third, he is rounding first behind it — and the man cutting it is the only
+one in a position to take him.
+
+Rather than special-case that, it retired a limitation. A read used to have
+exactly two lines; now a play carries a **list** of them, and the batter
+rounding is simply another line the throw could take. So a base hit with a man
+on second now resolves three ways — throw home, throw to third if he holds,
+throw to second if the batter gets greedy — and every fielder is shown each line
+he has a different job on.
+
+He is drawn rounding the bag rather than stopped on it, cutting the corner the
+way a runner actually does.
+
 Pickoffs. With a runner anywhere, the play offers to go after him: six plays
 across the three bases, from the pitcher or from the catcher.
 
@@ -100,8 +114,8 @@ each throw, with the runners moving and one throw in the air at a time.
 
 Known gaps, all deliberate:
 
-- **A read has exactly two lines.** The runner goes or he holds; there is no
-  third option, and the defence is always shown playing for him going.
+- **The defence is always shown playing for the runner going**, with the other
+  lines as reads off it.
 - **Nothing changes between *phases*.** A fielder's job can depend on the read,
   but not on where an earlier throw in the same play went.
 - A rundown between home and first

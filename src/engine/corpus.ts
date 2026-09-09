@@ -328,7 +328,14 @@ export const CORPUS: Scenario[] = [
     throws: ['home'],
     branchWhen: 'If he holds at third',
     // The textbook conditional: he cannot know which bag until the throw goes.
-    alternatives: { P: 'backup:third', '3B': 'cover:third', SS: 'cutoff:third' },
+    // The right fielder's read is the other one — the batter-runner rounding
+    // first behind the throw home.
+    alternatives: {
+      P: 'backup:third',
+      '3B': 'cover:third',
+      SS: 'cutoff:third',
+      RF: 'backup:second',
+    },
     expect: { P: 'backup:home', '1B': 'cutoff:home' },
   },
   {

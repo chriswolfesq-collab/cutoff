@@ -410,11 +410,11 @@ export default function App() {
                         {'to' in a.role && a.role.to ? ` to ${a.role.to}` : ''}
                       </strong>
                       <p>{a.why}</p>
-                      {a.alternative && (
-                        <p className="alt-note">
-                          <em>{a.alternative.when}</em> &rarr; {a.alternative.why.toLowerCase()}
+                      {a.alternatives?.map((alt) => (
+                        <p key={alt.when} className="alt-note">
+                          <em>{alt.when}</em> &rarr; {alt.why.toLowerCase()}
                         </p>
-                      )}
+                      ))}
                       <code className="rule">{a.ruleId}</code>
                     </div>
                   </li>
@@ -495,15 +495,16 @@ export default function App() {
                         : `He's hung up between ${play.rundown.behind} and ${play.rundown.ahead}`}
                     </button>
                   )}
-                  {!inRundown && play.branch && (
-                    <p className="note read">
-                      {play.branch.when}, the throw goes{' '}
-                      {play.branch.throws.length
-                        ? `to ${play.branch.throws.map((t) => t.to).join(' then ')}`
-                        : 'nowhere'}
-                      . Dashed markers show who moves.
-                    </p>
-                  )}
+                  {!inRundown &&
+                    play.branches?.map((b) => (
+                      <p key={b.when} className="note read">
+                        {b.when}, the throw goes{' '}
+                        {b.throws.length
+                          ? `to ${b.throws.map((t) => t.to).join(' then ')}`
+                          : 'nowhere'}
+                        .
+                      </p>
+                    ))}
                   {rundown?.notes.map((n) => (
                     <p key={n} className="note">{n}</p>
                   ))}
@@ -523,18 +524,15 @@ export default function App() {
                             {'fielder' in a.role && a.role.fielder ? ` the ${a.role.fielder}` : ''}
                           </strong>
                           <p>{a.why}</p>
-                          {a.alternative && (
-                            <p className="alt-note">
-                              <em>{a.alternative.when}</em> &rarr;{' '}
-                              {ROLE_LABELS[a.alternative.role.kind].toLowerCase()}
-                              {'base' in a.alternative.role && a.alternative.role.base
-                                ? ` ${a.alternative.role.base}`
-                                : ''}
-                              {'on' in a.alternative.role && a.alternative.role.on
-                                ? ` to ${a.alternative.role.on.to}`
-                                : ''}
+                          {a.alternatives?.map((alt) => (
+                            <p key={alt.when} className="alt-note">
+                              <em>{alt.when}</em> &rarr;{' '}
+                              {ROLE_LABELS[alt.role.kind].toLowerCase()}
+                              {'base' in alt.role && alt.role.base ? ` ${alt.role.base}` : ''}
+                              {'to' in alt.role && alt.role.to ? ` to ${alt.role.to}` : ''}
+                              {'on' in alt.role && alt.role.on ? ` to ${alt.role.on.to}` : ''}
                             </p>
-                          )}
+                          ))}
                           <code className="rule">{a.ruleId}</code>
                         </div>
                       </li>

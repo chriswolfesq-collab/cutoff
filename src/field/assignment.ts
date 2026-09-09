@@ -90,8 +90,12 @@ export type Assignment = {
   path?: Point[];
   /** The phase this job starts at. Everything is 1 today; see PlayPhase. */
   phase: number;
-  /** Set only when this fielder's job depends on a read. */
-  alternative?: Alternative;
+  /**
+   * Every other job this fielder could end up with, one per read the play
+   * carries. A cutoff man in particular is not in one of two states — he has a
+   * menu, and which one he takes is the decision he is out there to make.
+   */
+  alternatives?: Alternative[];
   why: string;
   ruleId: string;
 };
@@ -107,8 +111,8 @@ export type ResolvedPlay = {
    */
   ballAt: Point;
   phases: PlayPhase[];
-  /** Present when the throw was a read rather than a certainty. */
-  branch?: { when: string; throws: ThrowRef[] };
+  /** Every line the throw could take other than the one being played for. */
+  branches?: { when: string; throws: ThrowRef[] }[];
   /** Present when a throw could leave a runner hung up between two bases. */
   rundown?: RundownPlay;
 };

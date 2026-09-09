@@ -51,8 +51,8 @@ export type Ctx = {
   throws: ThrowRef[];
   out: Map<Position, Assignment>;
   notes: string[];
-  /** Set when the throw was a read, naming the alternative. */
-  branchWhen?: string;
+  /** The reads this play carries, in the order the throw plan listed them. */
+  branches?: { when: string }[];
 };
 
 /**

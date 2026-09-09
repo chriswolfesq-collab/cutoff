@@ -68,7 +68,7 @@ describe('first and third', () => {
   it('gives the cut man a read, and gives nobody else one', () => {
     every((s, call) => {
       const play = buildFirstAndThird(s, FIELD_CONFIGS[s.level], call);
-      const withAlt = play.assignments.filter((a) => a.alternative);
+      const withAlt = play.assignments.filter((a) => a.alternatives?.length);
       const isCut = call === 'cutPitcher' || call === 'cutMiddle';
 
       expect(withAlt).toHaveLength(isCut ? 1 : 0);
@@ -76,7 +76,7 @@ describe('first and third', () => {
 
       const cut = withAlt[0];
       expect(cut.role.kind).toBe('cutoff');
-      expect(roleKey(cut.alternative!.role)).toBe('throws:home');
+      expect(cut.alternatives!.map((a) => roleKey(a.role))).toEqual(['throws:home']);
       expect(cut.position).toBe(call === 'cutPitcher' ? 'P' : s.batterHand === 'R' ? '2B' : 'SS');
     });
   });
