@@ -14,6 +14,7 @@ import {
 import { alignment, POSITIONS, POSITION_NUMBERS, type Position, type Posture } from '../field/alignments';
 import type { Assignment, PlayPhase, ResolvedPlay } from '../field/assignment';
 import { ROLE_CLASS } from './roleStyles';
+import Callout from './Callout';
 import ZoneOverlay from './ZoneOverlay';
 
 /** Feet -> SVG user units. Only the y-axis flips; 1 unit stays 1 foot. */
@@ -97,6 +98,11 @@ export default function Field({
   // At the set nothing has happened yet, so everyone is still where they lined
   // up — the movement only reads as movement if there is a before.
   const atSet = (phase?.index ?? 1) === 0;
+
+  // Only a fielder with a job has something to explain, so an unresolved play
+  // — and a drill before it is answered — gets no callout and gives nothing
+  // away.
+  const hovered = highlight ? (byPosition.get(highlight) ?? null) : null;
 
   // Screen pixels -> viewBox units -> field feet. The viewBox is already in
   // feet, so the only correction is the y flip.
@@ -232,7 +238,7 @@ export default function Field({
         return (
           <g
             key={pos}
-            className={`fielder ${cls}${highlight === pos ? ' hot' : ''}${onAnswer ? ' answerable' : ''}`}
+            className={`fielder ${cls}${highlight === pos ? ' hot' : ''}${a ? ' explained' : ''}${onAnswer ? ' answerable' : ''}`}
             transform={`translate(${s.x.toFixed(2)} ${s.y.toFixed(2)})`}
             onMouseEnter={() => onHighlight?.(pos)}
             onMouseLeave={() => onHighlight?.(null)}
@@ -248,6 +254,16 @@ export default function Field({
           </g>
         );
       })}
+
+      {/* Last, so it sits over the markers it explains. */}
+      {hovered && (
+        <Callout
+          assignment={hovered}
+          at={toScreen(atSet ? start[hovered.position] : hovered.target)}
+          r={r}
+          bounds={{ minX: -maxX, minY: -maxY, maxX, maxY: 60 }}
+        />
+      )}
 
       {phase && (
         <g className="runners" pointerEvents="none">
