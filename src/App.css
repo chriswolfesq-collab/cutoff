@@ -399,6 +399,54 @@ code {
 .route.role-cut { stroke: var(--r-cut); }
 .route.role-watch { stroke: var(--r-watch); opacity: 0.35; }
 
+/* --- conditional assignments --- */
+
+.alt { --alt-colour: var(--r-watch); }
+.alt.role-primary { --alt-colour: var(--r-primary); }
+.alt.role-cover { --alt-colour: var(--r-cover); }
+.alt.role-backup { --alt-colour: var(--r-backup); }
+.alt.role-cut { --alt-colour: var(--r-cut); }
+
+.alt path {
+  fill: none;
+  stroke: var(--alt-colour);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+  opacity: 0.55;
+}
+
+.alt circle {
+  fill: var(--bg);
+  fill-opacity: 0.75;
+  stroke: var(--alt-colour);
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+}
+
+.alt text {
+  fill: var(--alt-colour);
+  text-anchor: middle;
+  font-weight: 700;
+  font-family: inherit;
+}
+
+/* Dashed, to echo the markers on the field — a colour would read as a role. */
+.note.read {
+  border-left-style: dashed;
+  border-left-color: var(--fg-dim);
+  color: var(--fg-dim);
+}
+
+.alt-note {
+  margin: 0.25rem 0 0;
+  padding-left: 0.5rem;
+  border-left: 1px dashed var(--fg-dim);
+  font-size: 0.76rem;
+  color: var(--fg-dim);
+}
+
+.alt-note em { font-style: italic; }
+
 .result { margin-top: 0.9rem; }
 
 .note:first-child {

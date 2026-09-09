@@ -48,6 +48,19 @@ describe('golden corpus', () => {
         expect(play.throws.map((t) => t.from)).toEqual(scenario.throwsFrom);
       }
 
+      if (scenario.branchWhen) {
+        expect(play.branch?.when).toBe(scenario.branchWhen);
+      }
+
+      if (scenario.alternatives) {
+        const actualAlts = Object.fromEntries(
+          play.assignments
+            .filter((a) => a.alternative)
+            .map((a) => [a.position, roleKey(a.alternative!.role)]),
+        );
+        expect(actualAlts).toEqual(scenario.alternatives);
+      }
+
       if (scenario.phases) {
         expect(play.phases.map((ph) => ph.label)).toEqual(scenario.phases);
       }

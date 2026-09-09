@@ -251,6 +251,58 @@ describe(`resolver invariants over ${PLAYS.length} plays`, () => {
     assertNoFailures(failures);
   });
 
+  it('only records an alternative that is a real job', () => {
+    const failures: string[] = [];
+    for (const p of PLAYS) {
+      const play = resolvePlay(p);
+      for (const a of play.assignments) {
+        if (!a.alternative) continue;
+        if (a.alternative.role.kind === 'watch') {
+          failures.push(`${label(p)}: ${a.position} alternative is doing nothing`);
+        }
+        if (!a.alternative.when.trim() || !a.alternative.ruleId.trim()) {
+          failures.push(`${label(p)}: ${a.position} alternative has no read or rule`);
+        }
+        if (roleKey(a.alternative.role) === roleKey(a.role) &&
+            dist(a.alternative.target, a.target) <= 10) {
+          failures.push(`${label(p)}: ${a.position} alternative is the same job in the same place`);
+        }
+      }
+    }
+    assertNoFailures(failures);
+  });
+
+  it('never records an alternative without a branch to justify it', () => {
+    const failures: string[] = [];
+    for (const p of PLAYS) {
+      const play = resolvePlay(p);
+      const withAlt = play.assignments.filter((a) => a.alternative);
+      if (withAlt.length > 0 && !play.branch) {
+        failures.push(`${label(p)}: alternatives with no branch`);
+      }
+      for (const a of withAlt) {
+        if (a.alternative!.when !== play.branch?.when) {
+          failures.push(`${label(p)}: ${a.position} reads a different branch`);
+        }
+      }
+    }
+    assertNoFailures(failures);
+  });
+
+  it('keeps alternative positions inside the ballpark too', () => {
+    const failures: string[] = [];
+    for (const p of PLAYS) {
+      const limit = FIELD_CONFIGS[p.situation.level].fence.center + 60;
+      for (const a of resolvePlay(p).assignments) {
+        const t = a.alternative?.target;
+        if (t && (Math.hypot(t.x, t.y) > limit || t.y < -60)) {
+          failures.push(`${label(p)}: ${a.position} alternative off the field`);
+        }
+      }
+    }
+    assertNoFailures(failures);
+  });
+
   it('sends the primary fielder to the ball', () => {
     const failures: string[] = [];
     for (const p of PLAYS) {

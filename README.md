@@ -6,6 +6,21 @@ fielders should be — who fields it, who covers, who cuts, who backs up.
 
 ## Status
 
+Conditional assignments. Some throws are not decided at contact — the defence
+does not know whether the man on first is going to third until he commits. Those
+plays resolve **twice**: the line the defence plays for, and the line it plays
+for if the runner holds. Any fielder whose job differs between the two carries
+both, drawn on the field as a dashed marker.
+
+That produces the textbook case without anyone authoring it: on a base hit to
+left with a man on second, the pitcher gets `backup:home` with an alternative of
+`backup:third` — back up third or home depending on the throw.
+
+Two rules keep it honest. The alternative is a *real resolved play*, never a
+hand-written guess, so it cannot drift from the rules that produced the main
+line. And an alternative is only recorded when it is a genuine job: "if he
+holds, you have nothing to do" is not a read worth drawing.
+
 Phase 6: drill mode and permalinks.
 
 **Drill mode** deals a situation and asks who has one of the jobs on it — the
@@ -35,11 +50,10 @@ each throw, with the runners moving and one throw in the air at a time.
 
 Known gaps, all deliberate:
 
-- **Nobody's *assignment* changes mid-play.** Fielders hold one job throughout,
-  which is true of every situation the rules currently produce — no throw in the
-  engine is conditional on where an earlier one went. When conditional jobs
-  arrive ("back up third *or* home depending on the throw"), `Assignment.phase`
-  is where they go; the phase model is already under them.
+- **A read has exactly two lines.** The runner goes or he holds; there is no
+  third option, and the defence is always shown playing for him going.
+- **Nothing changes between *phases*.** A fielder's job can depend on the read,
+  but not on where an earlier throw in the same play went.
 - **No rundowns, no first-and-third plays, no pickoffs.**
 - **The batter-runner is not tracked past his first destination** — nobody
   reacts to him taking an extra base while the throw is elsewhere.

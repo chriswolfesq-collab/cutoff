@@ -22,7 +22,7 @@ import {
 import { alignment, POSITIONS, type Position } from '../field/alignments';
 import { classify, isInfieldBand } from '../field/zones';
 import { outfieldOwnerAt, primaryFor } from '../field/primary';
-import type { Assignment, ResolvedPlay, Role } from '../field/assignment';
+import { roleKey, type Assignment, type ResolvedPlay, type Role } from '../field/assignment';
 import type { BaseId, PlayInput } from '../field/play';
 import {
   BACKUP_ORDER,
@@ -342,7 +342,8 @@ function layerSpacing(ctx: Ctx) {
   }
 }
 
-export function resolvePlay(input: PlayInput): ResolvedPlay {
+/** One pass of the layers, on whichever line of the throw plan was asked for. */
+function resolveOnce(input: PlayInput, useBranch: boolean): Ctx {
   const { level, posture } = input.situation;
   const cfg = FIELD_CONFIGS[level];
 
@@ -360,18 +361,56 @@ export function resolvePlay(input: PlayInput): ResolvedPlay {
   };
 
   layerPrimary(ctx);
-  layerThrows(ctx);
+  layerThrows(ctx, useBranch);
   layerCutoffRelay(ctx);
   layerCoverage(ctx);
   layerBackups(ctx);
   layerRemainder(ctx);
   layerSpacing(ctx);
 
+  return ctx;
+}
+
+export function resolvePlay(input: PlayInput): ResolvedPlay {
+  const main = resolveOnce(input, false);
+  const assignments = POSITIONS.map((p) => main.out.get(p)!);
+
+  if (main.branchWhen) {
+    // Resolve the other line in full and diff it. Anything that moves or
+    // changes job is something this fielder has to read the throw for.
+    const alt = resolveOnce(input, true);
+    const when = main.branchWhen;
+
+    for (const a of assignments) {
+      const b = alt.out.get(a.position);
+      if (!b) continue;
+
+      // "If he holds, you have nothing to do" is not a read worth drawing —
+      // the man is already shown with the job he has. Picking one *up* on the
+      // other line is worth drawing, and so is swapping one for another.
+      if (b.role.kind === 'watch') continue;
+
+      const movedFar = dist(a.target, b.target) > 10 * main.u;
+      if (roleKey(a.role) === roleKey(b.role) && !movedFar) continue;
+
+      a.alternative = { when, role: b.role, target: b.target, why: b.why, ruleId: b.ruleId };
+    }
+
+    return {
+      assignments,
+      throws: main.throws,
+      notes: main.notes,
+      ballAt: main.ball,
+      phases: buildPhases(main),
+      branch: { when, throws: alt.throws },
+    };
+  }
+
   return {
-    assignments: POSITIONS.map((p) => ctx.out.get(p)!),
-    throws: ctx.throws,
-    notes: ctx.notes,
-    ballAt: ctx.ball,
-    phases: buildPhases(ctx),
+    assignments,
+    throws: main.throws,
+    notes: main.notes,
+    ballAt: main.ball,
+    phases: buildPhases(main),
   };
 }

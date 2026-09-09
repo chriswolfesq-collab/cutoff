@@ -303,6 +303,15 @@ export default function App() {
                   {play.notes.map((n) => (
                     <p key={n} className="note">{n}</p>
                   ))}
+                  {play.branch && (
+                    <p className="note read">
+                      {play.branch.when}, the throw goes{' '}
+                      {play.branch.throws.length
+                        ? `to ${play.branch.throws.map((t) => t.to).join(' then ')}`
+                        : 'nowhere'}
+                      . Dashed markers show who moves.
+                    </p>
+                  )}
                   <ol className="assignments">
                     {play.assignments.map((a) => (
                       <li
@@ -319,6 +328,18 @@ export default function App() {
                             {'fielder' in a.role && a.role.fielder ? ` the ${a.role.fielder}` : ''}
                           </strong>
                           <p>{a.why}</p>
+                          {a.alternative && (
+                            <p className="alt-note">
+                              <em>{a.alternative.when}</em> &rarr;{' '}
+                              {ROLE_LABELS[a.alternative.role.kind].toLowerCase()}
+                              {'base' in a.alternative.role && a.alternative.role.base
+                                ? ` ${a.alternative.role.base}`
+                                : ''}
+                              {'on' in a.alternative.role && a.alternative.role.on
+                                ? ` to ${a.alternative.role.on.to}`
+                                : ''}
+                            </p>
+                          )}
                           <code className="rule">{a.ruleId}</code>
                         </div>
                       </li>

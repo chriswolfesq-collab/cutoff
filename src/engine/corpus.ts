@@ -26,6 +26,10 @@ export type Scenario = {
   throwsFrom?: string[];
   /** Expected phase labels, in order. */
   phases?: string[];
+  /** The read that makes this play a branch. */
+  branchWhen?: string;
+  /** Expected alternative role keys, by position. */
+  alternatives?: Partial<Record<Position, string>>;
   /** Role keys — see roleKey() in field/assignment.ts. */
   expect: Partial<Record<Position, string>>;
 };
@@ -312,6 +316,28 @@ export const CORPUS: Scenario[] = [
     outcome: 'drops',
     throws: ['home'],
     expect: { LF: 'primary', '3B': 'cutoff:home', SS: 'cover:third', C: 'cover:home' },
+  },
+  {
+    name: 'Single to left with a man on second — pitcher backs up third or home',
+    situation: { runners: { first: false, second: true, third: false }, outs: 1 },
+    ball: 'fly',
+    at: { x: -84, y: 141 },
+    outcome: 'drops',
+    throws: ['home'],
+    branchWhen: 'If he holds at third',
+    // The textbook conditional: he cannot know which bag until the throw goes.
+    alternatives: { P: 'backup:third', '3B': 'cover:third', SS: 'cutoff:third' },
+    expect: { P: 'backup:home', '1B': 'cutoff:home' },
+  },
+  {
+    name: 'Fly ball caught with a runner on third — no read, the play just ends',
+    situation: { runners: { first: false, second: false, third: true }, outs: 1 },
+    ball: 'fly',
+    at: { x: 0, y: 170 },
+    outcome: 'caught',
+    branchWhen: 'If he does not tag',
+    alternatives: {},
+    expect: { CF: 'primary', C: 'cover:home' },
   },
   {
     name: 'Adult: single to right with a man on second — first baseman cuts it',

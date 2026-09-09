@@ -34,12 +34,14 @@ only gets through one section, make it this one.
    (`primary.shallow.air`), at every depth in that band.
 10. **A ball on the ground within 16 feet of the mound is the pitcher's**
     (`primary.comebacker`), whatever sector it is in.
+11. **A read has exactly two lines** — the runner goes, or he holds. There is no
+    third option, and the defence is always shown playing for the runner going.
+    See Reads below.
 
 ## What is not modelled
 
-Rundowns, first-and-third plays, pickoffs, the batter-runner taking an extra
-base while the throw is elsewhere, and any assignment that changes partway
-through a play.
+Rundowns, first-and-third plays, pickoffs, and the batter-runner taking an extra
+base while the throw is elsewhere.
 
 ## Youth and Adult
 
@@ -142,6 +144,56 @@ Fly ball caught in centre field, youth field. A throw here means somebody tagged
 | loaded | 0 | CF → home |
 | loaded | 1 | CF → home |
 | loaded | 2 | — |
+
+## Reads
+
+Some throws are not decided at contact. These plays resolve twice — the
+line the defence plays for, and the line it plays for if the runner holds —
+and any fielder whose job differs between the two has to read the throw.
+
+### Base hit to left, man on first
+
+Plays for a throw to **3rd**. If he stops at second — **2nd**.
+
+| Fielder | Plays for | Reads it the other way |
+| --- | --- | --- |
+| RF | watch | backup:second |
+
+### Base hit to left, man on second
+
+Plays for a throw to **home**. If he holds at third — **3rd**.
+
+| Fielder | Plays for | Reads it the other way |
+| --- | --- | --- |
+| P | backup:home | backup:third |
+| 3B | watch | cover:third |
+| SS | watch | cutoff:third |
+
+### Ground ball to short, man on third, infield in
+
+Plays for a throw to **home**. If he holds at third — **1st**.
+
+| Fielder | Plays for | Reads it the other way |
+| --- | --- | --- |
+| C | cover:home | backup:first |
+| 2B | watch | cover:second |
+| RF | watch | backup:first |
+
+### Ball to the wall, man on second
+
+Plays for a throw to **home**. If the lead runner holds at third — **3rd**.
+
+| Fielder | Plays for | Reads it the other way |
+| --- | --- | --- |
+| P | backup:home | backup:third |
+| 3B | watch | cover:third |
+| SS | relay:home | relay:third |
+
+### Fly ball caught deep in centre, man on third
+
+Plays for a throw to **home**. If he does not tag — **no throw**.
+
+Nobody picks up a different job — if the read goes the other way the play is simply over.
 
 ## Who covers first
 

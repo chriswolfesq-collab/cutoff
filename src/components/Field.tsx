@@ -189,6 +189,26 @@ export default function Field({
         </g>
       )}
 
+      {/* Where a fielder goes instead if the throw is read the other way.
+          Hollow and dashed: this is a job he may not end up with. */}
+      {play &&
+        !atSet &&
+        play.assignments
+          .filter((a) => a.alternative)
+          .map((a) => {
+            const alt = a.alternative!;
+            const to = toScreen(alt.target);
+            return (
+              <g key={`alt-${a.position}`} className={`alt ${ROLE_CLASS[alt.role.kind]}`} pointerEvents="none">
+                <path d={path([a.target, alt.target])} />
+                <circle cx={to.x} cy={to.y} r={r} />
+                <text x={to.x} y={to.y} dy={r * 0.36} fontSize={r * 1.05}>
+                  {POSITION_NUMBERS[a.position]}
+                </text>
+              </g>
+            );
+          })}
+
       {/* Positions live on a transform so the browser can tween them. */}
       {POSITIONS.map((pos) => {
         const a = byPosition.get(pos);

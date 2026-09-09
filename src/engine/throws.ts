@@ -6,6 +6,12 @@
  * rules below walk down from the lead base, and the first one that yields a
  * real play wins.
  *
+ * Some of those plays are genuinely undecided at the moment of contact — the
+ * defence does not know whether the man on first is going to third until he
+ * commits. Those cases return a *branch*: the line the defence plays for, plus
+ * the line it plays for if he holds. The resolver runs both and diffs them, so
+ * a fielder whose job depends on the read carries both jobs.
+ *
  * What is modelled: forces, the standard double play, the drawn-in infield
  * cutting off a run, tag-ups, and the throw ahead of the lead runner on a base
  * hit. What is not: rundowns, first-and-third plays, and the batter-runner
@@ -14,7 +20,7 @@
 
 import { dist } from '../field/geometry';
 import { isInfieldBand } from '../field/zones';
-import type { Runners } from '../field/play';
+import type { BaseId, Runners } from '../field/play';
 import type { Ctx } from './context';
 
 /** Bases where the runner has nowhere to go back to. */
@@ -28,128 +34,181 @@ export function forcedBases(r: Runners) {
 
 const anyRunner = (r: Runners) => r.first || r.second || r.third;
 
-export function layerThrows(ctx: Ctx) {
+type Dest = { to: BaseId; why: string };
+
+export type ThrowPlan = {
+  throws: Dest[];
+  notes: string[];
+  /** The other line, and the read that chooses it. */
+  branch?: { when: string; throws: Dest[] };
+};
+
+const plan = (throws: Dest[], notes: string[] = [], branch?: ThrowPlan['branch']): ThrowPlan => ({
+  throws, notes, branch,
+});
+
+export function planThrows(ctx: Ctx): ThrowPlan {
   const { outcome, situation } = ctx.input;
   const { runners, outs, posture } = situation;
   const infield = isInfieldBand(ctx.zone.band);
   const forced = forcedBases(runners);
   const drawnIn = posture === 'infieldIn' || posture === 'cornersIn';
 
-  let unassisted = false;
-
-  const send = (to: 'first' | 'second' | 'third' | 'home', why: string) => {
-    // A fielder standing on the bag does not throw to it — he steps on it.
-    if (dist(ctx.ball, ctx.bags[to]) < 12 * ctx.u) {
-      if (!unassisted) {
-        ctx.notes.push(`He is on top of ${to} — takes it himself, no throw.`);
-        unassisted = true;
-      }
-      return;
-    }
-    ctx.throws.push({ from: ctx.primary, to });
-    ctx.notes.push(why);
-  };
-
   switch (outcome) {
     case 'overFence':
-      ctx.notes.push('Gone. Nothing to defend.');
-      return;
+      return plan([], ['Gone. Nothing to defend.']);
     case 'foul':
-      ctx.notes.push('Foul ball — everyone resets.');
-      return;
+      return plan([], ['Foul ball — everyone resets.']);
     case 'noPlay':
-      ctx.notes.push('Bunt dies untouched — no throw, hold him to first.');
-      return;
+      return plan([], ['Bunt dies untouched — no throw, hold him to first.']);
 
     case 'caught': {
-      if (outs === 2) {
-        ctx.notes.push('Caught for the third out.');
-        return;
-      }
-      // Tag-ups. Only worth a throw from far enough out that a runner would go.
+      if (outs === 2) return plan([], ['Caught for the third out.']);
+
       const deep = ctx.zone.band === 'deep' || ctx.zone.band === 'wall';
       if (runners.third && !infield) {
-        send('home', 'Caught with a runner on third — he tags, play at the plate.');
-        return;
+        return plan(
+          [{ to: 'home', why: 'Caught with a runner on third — he tags, play at the plate.' }],
+          [],
+          { when: 'If he does not tag', throws: [] },
+        );
       }
       if (runners.second && deep) {
-        send('third', 'Deep enough for the runner on second to tag — play at third.');
-        return;
+        return plan(
+          [{ to: 'third', why: 'Deep enough for the runner on second to tag — play at third.' }],
+          [],
+          { when: 'If he does not tag', throws: [] },
+        );
       }
-      ctx.notes.push('Caught — batter is out, no throw.');
-      return;
+      return plan([], ['Caught — batter is out, no throw.']);
     }
 
     case 'toWall': {
       if (anyRunner(runners)) {
-        send('home', 'Ball to the wall with a runner on — relay home.');
-      } else {
-        send('third', 'Ball to the wall — batter is going for extra bases.');
+        return plan(
+          [{ to: 'home', why: 'Ball to the wall with a runner on — relay home.' }],
+          [],
+          {
+            when: 'If the lead runner holds at third',
+            throws: [{ to: 'third', why: 'Relay to third instead — he stopped.' }],
+          },
+        );
       }
-      return;
+      return plan([{ to: 'third', why: 'Ball to the wall — batter is going for extra bases.' }]);
     }
 
     case 'through':
     case 'drops': {
-      // Throw ahead of the lead runner. A man on second or third is heading
-      // home; a man on first is heading to third; otherwise it is the batter
-      // going to second.
-      if (runners.second || runners.third) {
-        send('home', 'Base hit with a runner in scoring position — play at the plate.');
-      } else if (runners.first) {
-        send('third', 'Base hit with a man on first — he is going first to third.');
-      } else {
-        send('second', 'Base hit — keep him to a single.');
+      // Throw ahead of the lead runner. Whether he actually goes is the read.
+      if (runners.second) {
+        return plan(
+          [{ to: 'home', why: 'Base hit with a runner in scoring position — play at the plate.' }],
+          [],
+          {
+            when: 'If he holds at third',
+            throws: [{ to: 'third', why: 'He stopped at third — throw in behind him.' }],
+          },
+        );
       }
-      return;
+      if (runners.third) {
+        return plan(
+          [{ to: 'home', why: 'Base hit with a man on third — play at the plate.' }],
+          [],
+          {
+            when: 'If he holds at third',
+            throws: [{ to: 'second', why: 'Run concedes — keep the batter out of scoring position.' }],
+          },
+        );
+      }
+      if (runners.first) {
+        return plan(
+          [{ to: 'third', why: 'Base hit with a man on first — he is going first to third.' }],
+          [],
+          {
+            when: 'If he stops at second',
+            throws: [{ to: 'second', why: 'He held up — the play is on the bag behind him.' }],
+          },
+        );
+      }
+      return plan([{ to: 'second', why: 'Base hit — keep him to a single.' }]);
     }
 
-    case 'bobbled': {
-      send('first', 'Knocked down — the play at first is close; make sure of it.');
-      return;
-    }
+    case 'bobbled':
+      return plan([
+        { to: 'first', why: 'Knocked down — the play at first is close; make sure of it.' },
+      ]);
 
     case 'fielded': {
       if (!infield) {
-        // Fielded in the outfield: same lead-runner logic as a base hit.
-        if (runners.second || runners.third) send('home', 'Play at the plate.');
-        else if (runners.first) send('third', 'Man on first is going to third.');
-        else send('second', 'Keep him to a single.');
-        return;
+        if (runners.second || runners.third) return plan([{ to: 'home', why: 'Play at the plate.' }]);
+        if (runners.first) return plan([{ to: 'third', why: 'Man on first is going to third.' }]);
+        return plan([{ to: 'second', why: 'Keep him to a single.' }]);
       }
 
-      // Cut the run off at the plate — but only if the defence is set up for
-      // it, or the force means it costs nothing to try.
       if (runners.third && outs < 2 && (drawnIn || forced.home)) {
-        send('home', forced.home
-          ? 'Bases loaded — take the force at the plate.'
-          : 'Infield is in — cut the run off at the plate.');
-        if (forced.home) send('first', 'Then across to first for two.');
-        return;
+        const line: Dest[] = [
+          {
+            to: 'home',
+            why: forced.home
+              ? 'Bases loaded — take the force at the plate.'
+              : 'Infield is in — cut the run off at the plate.',
+          },
+        ];
+        if (forced.home) line.push({ to: 'first', why: 'Then across to first for two.' });
+        return plan(line, [], forced.home ? undefined : {
+          // An unforced runner has to commit; if he freezes, the play is at first.
+          when: 'If he holds at third',
+          throws: [{ to: 'first', why: 'Look him back and take the out at first.' }],
+        });
       }
 
-      if (outs === 2) {
-        send('first', 'Two out — take the sure out at first.');
-        return;
-      }
+      if (outs === 2) return plan([{ to: 'first', why: 'Two out — take the sure out at first.' }]);
 
-      // Force at third is only on when the man fielding it is right there.
       if (forced.third && ctx.primary === '3B' && dist(ctx.ball, ctx.bags.third) < 25 * ctx.u) {
-        send('third', 'Runners moving and he is on the bag — force at third.');
-        send('first', 'Then across to first for two.');
-        return;
+        return plan([
+          { to: 'third', why: 'Runners moving and he is on the bag — force at third.' },
+          { to: 'first', why: 'Then across to first for two.' },
+        ]);
       }
 
       if (forced.second) {
-        send('second', 'Force at second — turn two.');
-        send('first', 'Then across to first.');
-        return;
+        return plan([
+          { to: 'second', why: 'Force at second — turn two.' },
+          { to: 'first', why: 'Then across to first.' },
+        ]);
       }
 
-      send('first', runners.third
-        ? 'Infield is back — take the out at first and concede the run.'
-        : 'Routine play at first.');
-      return;
+      return plan([
+        {
+          to: 'first',
+          why: runners.third
+            ? 'Infield is back — take the out at first and concede the run.'
+            : 'Routine play at first.',
+        },
+      ]);
     }
+  }
+}
+
+/** Install one line of the plan onto the context. */
+export function layerThrows(ctx: Ctx, useBranch = false) {
+  const p = planThrows(ctx);
+  const line = useBranch && p.branch ? p.branch.throws : p.throws;
+
+  ctx.branchWhen = p.branch?.when;
+  ctx.notes.push(...p.notes);
+
+  let unassisted = false;
+  for (const d of line) {
+    // A fielder standing on the bag does not throw to it — he steps on it.
+    if (dist(ctx.ball, ctx.bags[d.to]) < 12 * ctx.u) {
+      if (!unassisted) {
+        ctx.notes.push(`He is on top of ${d.to} — takes it himself, no throw.`);
+        unassisted = true;
+      }
+      continue;
+    }
+    ctx.throws.push({ from: ctx.primary, to: d.to });
+    ctx.notes.push(d.why);
   }
 }

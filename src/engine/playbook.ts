@@ -248,6 +248,74 @@ function coverFirstTable() {
   ].join('\n');
 }
 
+/** Where the play is a read, and who has to make it. */
+function readsSection(): string {
+  const cases: { title: string; spot: Spot; over: Partial<Situation> }[] = [
+    {
+      title: 'Base hit to left, man on first',
+      spot: HIT_TO('youth', -31),
+      over: { runners: { first: true, second: false, third: false }, outs: 0 },
+    },
+    {
+      title: 'Base hit to left, man on second',
+      spot: HIT_TO('youth', -31),
+      over: { runners: { first: false, second: true, third: false }, outs: 1 },
+    },
+    {
+      title: 'Ground ball to short, man on third, infield in',
+      spot: { ball: 'ground', at: { x: -27, y: 87 }, outcome: 'fielded' },
+      over: { runners: { first: false, second: false, third: true }, outs: 0, posture: 'infieldIn' },
+    },
+    {
+      title: 'Ball to the wall, man on second',
+      spot: WALL_AT('youth', -17),
+      over: { runners: { first: false, second: true, third: false }, outs: 1 },
+    },
+    {
+      title: 'Fly ball caught deep in centre, man on third',
+      spot: { ball: 'fly', at: { x: 0, y: 175 }, outcome: 'caught' },
+      over: { runners: { first: false, second: false, third: true }, outs: 1 },
+    },
+  ];
+
+  const out: string[] = [];
+
+  for (const c of cases) {
+    const play = run(c.spot, c.over);
+    if (!play.branch) {
+      out.push(`### ${c.title}`, '', 'No read — the throw is decided.', '');
+      continue;
+    }
+
+    const main = play.throws.map((t) => BASE_LABEL[t.to]).join(', ') || 'no throw';
+    const other = play.branch.throws.map((t) => BASE_LABEL[t.to]).join(', ') || 'no throw';
+    const changed = play.assignments.filter((a) => a.alternative);
+    const head = `Plays for a throw to **${main}**. ${play.branch.when} — **${other}**.`;
+
+    if (changed.length === 0) {
+      out.push(`### ${c.title}`, '', head, '',
+        'Nobody picks up a different job — if the read goes the other way the play is simply over.',
+        '');
+      continue;
+    }
+
+    out.push(
+      `### ${c.title}`,
+      '',
+      head,
+      '',
+      '| Fielder | Plays for | Reads it the other way |',
+      '| --- | --- | --- |',
+      ...changed.map(
+        (a) => `| ${a.position} | ${roleKey(a.role)} | ${roleKey(a.alternative!.role)} |`,
+      ),
+      '',
+    );
+  }
+
+  return out.join('\n');
+}
+
 function backupTable() {
   return [
     '| Base | Order of preference |',
@@ -296,12 +364,14 @@ only gets through one section, make it this one.
    (\`primary.shallow.air\`), at every depth in that band.
 10. **A ball on the ground within 16 feet of the mound is the pitcher's**
     (\`primary.comebacker\`), whatever sector it is in.
+11. **A read has exactly two lines** — the runner goes, or he holds. There is no
+    third option, and the defence is always shown playing for the runner going.
+    See Reads below.
 
 ## What is not modelled
 
-Rundowns, first-and-third plays, pickoffs, the batter-runner taking an extra
-base while the throw is elsewhere, and any assignment that changes partway
-through a play.
+Rundowns, first-and-third plays, pickoffs, and the batter-runner taking an extra
+base while the throw is elsewhere.
 `;
 
 export function buildPlaybook(): string {
@@ -337,6 +407,13 @@ export function buildPlaybook(): string {
       [{ label: 'Throw', posture: 'normal' }],
     ),
     '',
+    '## Reads',
+    '',
+    'Some throws are not decided at contact. These plays resolve twice — the',
+    'line the defence plays for, and the line it plays for if the runner holds —',
+    'and any fielder whose job differs between the two has to read the throw.',
+    '',
+    readsSection(),
     '## Who covers first',
     '',
     coverFirstTable(),

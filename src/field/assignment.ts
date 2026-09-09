@@ -58,6 +58,20 @@ export type PlayPhase = {
   runners: RunnerSpot[];
 };
 
+/**
+ * What a fielder does instead when the throw goes the other way. Produced by
+ * resolving the alternative line in full and diffing it, never hand-authored,
+ * so it cannot disagree with the rules that produced the main line.
+ */
+export type Alternative = {
+  /** The read, in coaching terms: "If he holds at third". */
+  when: string;
+  role: Role;
+  target: Point;
+  why: string;
+  ruleId: string;
+};
+
 export type Assignment = {
   position: Position;
   role: Role;
@@ -67,6 +81,8 @@ export type Assignment = {
   path?: Point[];
   /** The phase this job starts at. Everything is 1 today; see PlayPhase. */
   phase: number;
+  /** Set only when this fielder's job depends on a read. */
+  alternative?: Alternative;
   why: string;
   ruleId: string;
 };
@@ -82,6 +98,8 @@ export type ResolvedPlay = {
    */
   ballAt: Point;
   phases: PlayPhase[];
+  /** Present when the throw was a read rather than a certainty. */
+  branch?: { when: string; throws: ThrowRef[] };
 };
 
 /**
