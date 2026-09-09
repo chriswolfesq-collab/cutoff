@@ -34,16 +34,24 @@ only gets through one section, make it this one.
    (`primary.shallow.air`), at every depth in that band.
 10. **A ball on the ground within 16 feet of the mound is the pitcher's**
     (`primary.comebacker`), whatever sector it is in.
-11. **In a rundown the ball starts with whoever took the throw** — he is the
+11. **On a straight steal the shortstop covers second against a right-handed
+    hitter, the second baseman against a left-hander** (`ft.cover.second`).
+    In a real game this is a signal between the two of them, and plenty of
+    programmes call it the other way round. This is the single claim here I am
+    least confident in.
+12. **The five first-and-third calls** (`ft.*`) are common ones, but this is
+    the most system-dependent area in the game — a programme running different
+    names and different responsibilities is not wrong. Check the whole section.
+13. **In a rundown the ball starts with whoever took the throw** — he is the
     one who runs the man back, and after his throw he goes to the back of the
     line at the bag he threw to (`rundown.rotate`). One throw is the target.
-12. **A read has exactly two lines** — the runner goes, or he holds. There is no
+14. **A read has exactly two lines** — the runner goes, or he holds. There is no
     third option, and the defence is always shown playing for the runner going.
     See Reads below.
 
 ## What is not modelled
 
-First-and-third plays, pickoffs, and the batter-runner taking an extra base
+Pickoffs, and the batter-runner taking an extra base
 while the throw is elsewhere. A rundown between home and first is not offered
 either — it needs a dropped third strike or a misplayed bunt, not a batted ball
 being fielded.
@@ -199,6 +207,20 @@ Plays for a throw to **home**. If the lead runner holds at third — **3rd**.
 Plays for a throw to **home**. If he does not tag — **no throw**.
 
 Nobody picks up a different job — if the read goes the other way the play is simply over.
+
+## First and third
+
+Runners on first and third, one out, right-handed hitter, youth field.
+The call is an input, not a recommendation — which one you run depends on
+the score, the inning and who is running, none of which this models.
+
+| Call | Throws it | Covers second | Cuts it | Backs up |
+| --- | --- | --- | --- | --- |
+| Throw through to second | C | SS | — | 2B, CF |
+| Pitcher cuts it | C | SS | P | 2B, CF |
+| Middle infielder cuts it | C | SS | 2B | CF |
+| Snap throw behind him to third | C | SS | — | 2B, LF |
+| Hold the ball | — | SS | — | — |
 
 ## Rundowns
 

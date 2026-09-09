@@ -407,6 +407,9 @@ code {
 .alt.role-backup { --alt-colour: var(--r-backup); }
 .alt.role-cut { --alt-colour: var(--r-cut); }
 
+/* A halo sits on top of the fielder, so it must not paint over him. */
+.alt.halo circle { fill: none; }
+
 .alt path {
   fill: none;
   stroke: var(--alt-colour);
@@ -418,6 +421,7 @@ code {
 .alt circle {
   fill: var(--bg);
   fill-opacity: 0.75;
+  pointer-events: none;
   stroke: var(--alt-colour);
   stroke-width: 2;
   stroke-dasharray: 4 3;
@@ -608,3 +612,34 @@ button:focus-visible,
   border-style: solid;
   background: rgba(255, 179, 64, 0.14);
 }
+
+/* --- first and third --- */
+
+.first-third {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.9rem;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--r-primary);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.ft-enter {
+  border: 0;
+  background: transparent;
+  color: var(--r-primary);
+  font: inherit;
+  font-size: 0.87rem;
+  font-weight: 600;
+  padding: 0.1rem 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.ft-enter:hover { text-decoration: underline; }
+
+.first-third .segmented button { font-size: 0.78rem; }
+.first-third .link-button { margin-left: auto; }

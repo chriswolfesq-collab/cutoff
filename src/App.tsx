@@ -5,6 +5,14 @@ import { POSITION_NAMES, type Position } from './field/alignments';
 import { ROLE_LABELS } from './field/assignment';
 import { resolvePlay } from './engine/resolve';
 import { generateDrill, rngFrom, type Drill } from './engine/drill';
+import {
+  buildFirstAndThird,
+  CALL_BLURB,
+  CALL_NAMES,
+  FIRST_THIRD_CALLS,
+  type FirstThirdCall,
+} from './engine/firstAndThird';
+import { FIELD_CONFIGS } from './field/geometry';
 import DrillPanel, { type Score } from './components/DrillPanel';
 import { decode, encode } from './urlState';
 import { ROLE_CLASS } from './components/roleStyles';
@@ -40,6 +48,7 @@ export default function App() {
   const [score, setScore] = useState<Score>({ right: 0, total: 0 });
   const [copied, setCopied] = useState(false);
   const [inRundown, setInRundown] = useState(false);
+  const [call, setCall] = useState<FirstThirdCall | null>(null);
   // Seeded when drill mode is entered rather than during render, so the clock
   // is read from an event and the sequence differs between sessions.
   const rng = useRef<() => number>(() => 0);
@@ -66,7 +75,16 @@ export default function App() {
    * A rundown is a separate state with its own two-phase rotation, so it takes
    * over the field rather than being drawn on top of the batted-ball play.
    */
-  const rundown = inRundown ? (play?.rundown ?? null) : null;
+  /**
+   * First and third is a play with no batted ball, so it takes over the field
+   * the way a rundown does rather than being layered onto one.
+   */
+  const firstAndThird =
+    situation.runners.first && situation.runners.third && call
+      ? buildFirstAndThird(situation, FIELD_CONFIGS[situation.level], call)
+      : null;
+
+  const rundown = !firstAndThird && inRundown ? (play?.rundown ?? null) : null;
   // phaseIndex is derived below; the rundown reads it once it exists.
 
   const sig =
@@ -77,16 +95,20 @@ export default function App() {
           ball, outcome, pick.x.toFixed(1), pick.y.toFixed(1),
         ].join('|')
       : '';
+  // Switching the call is a different sequence, so the scrubber starts over.
+  const scrubSig = `${sig}|${call ?? ''}`;
 
-  const sequence = rundown ? rundown.phases : play?.phases;
+  const sequence = firstAndThird?.phases ?? (rundown ? rundown.phases : play?.phases);
   const lastPhase = sequence ? sequence.length - 1 : 0;
-  const current = scrub.sig === sig ? scrub : { sig, index: 1, playing: false };
+  const current =
+    scrub.sig === scrubSig ? scrub : { sig: scrubSig, index: firstAndThird ? 0 : 1, playing: false };
   const phaseIndex = Math.min(current.index, lastPhase);
   // Playback stops on its own at the end; deriving it keeps the button honest
   // without writing state from inside the timer effect.
   const playing = current.playing && phaseIndex < lastPhase;
   const currentPhase = play?.phases[phaseIndex] ?? null;
   const rundownPhase = rundown?.phases[phaseIndex] ?? null;
+  const ftPhase = firstAndThird?.phases[Math.min(phaseIndex, firstAndThird.phases.length - 1)] ?? null;
 
   // The chaser's job changes once he throws — the one keyframe in the engine.
   const rundownAssignments = rundown
@@ -106,11 +128,11 @@ export default function App() {
 
   const togglePlay = () => {
     if (playing) {
-      setScrub({ sig, index: phaseIndex, playing: false });
+      setScrub({ sig: scrubSig, index: phaseIndex, playing: false });
       return;
     }
     // Pressing play at the end replays from the set.
-    setScrub({ sig, index: phaseIndex >= lastPhase ? 0 : phaseIndex, playing: true });
+    setScrub({ sig: scrubSig, index: phaseIndex >= lastPhase ? 0 : phaseIndex, playing: true });
   };
 
   // Keep the address bar in step so the link is always the play on screen.
@@ -222,23 +244,52 @@ export default function App() {
         </div>
       )}
 
+      {mode === 'explore' && situation.runners.first && situation.runners.third && (
+        <div className="first-third">
+          {!call ? (
+            <button type="button" className="ft-enter" onClick={() => setCall('through')}>
+              First and third — the runner on first goes &rarr;
+            </button>
+          ) : (
+            <>
+              <span className="control-label">The call</span>
+              <div className="segmented" role="group" aria-label="First and third call">
+                {FIRST_THIRD_CALLS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    aria-pressed={call === c}
+                    onClick={() => setCall(c)}
+                  >
+                    {CALL_NAMES[c]}
+                  </button>
+                ))}
+              </div>
+              <button type="button" className="link-button" onClick={() => setCall(null)}>
+                Back to the batted ball
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
       <div className="layout">
         <div className="stage">
           <Field
             level={situation.level}
             posture={situation.posture}
             showZones={showZones}
-            pick={rundown ? null : shownPick}
-            play={shownPlay}
-            phase={rundown ? rundownPhase : shownPhase}
-            override={rundownAssignments}
+            pick={rundown || firstAndThird ? null : shownPick}
+            play={firstAndThird ? null : shownPlay}
+            phase={firstAndThird ? ftPhase : rundown ? rundownPhase : shownPhase}
+            override={firstAndThird?.assignments ?? rundownAssignments}
             highlight={highlight}
             onPick={mode === 'explore' ? choose : undefined}
             onHighlight={setHighlight}
             onAnswer={drilling && !answer ? submitAnswer : undefined}
           />
 
-          {mode === 'explore' && play && (
+          {mode === 'explore' && (play || firstAndThird) && (
             <div className="scrubber">
               <button
                 type="button"
@@ -249,12 +300,15 @@ export default function App() {
                 {playing ? '❚❚' : '▶'}
               </button>
               <div className="phases" role="group" aria-label="Play phase">
-                {(rundown ? rundown.phases : play.phases).map((ph) => (
+                {(sequence ?? []).map((ph) => (
                   <button
                     key={ph.index}
                     type="button"
-                    aria-pressed={(rundown ? rundownPhase : currentPhase)?.index === ph.index}
-                    onClick={() => setScrub({ sig, index: ph.index, playing: false })}
+                    aria-pressed={
+                      (firstAndThird ? ftPhase : rundown ? rundownPhase : currentPhase)?.index ===
+                      ph.index
+                    }
+                    onClick={() => setScrub({ sig: scrubSig, index: ph.index, playing: false })}
                   >
                     {ph.label}
                   </button>
@@ -264,7 +318,43 @@ export default function App() {
           )}
         </div>
 
-        {drilling ? (
+        {firstAndThird ? (
+          <aside className="panel">
+            <h2>{CALL_NAMES[firstAndThird.call]}</h2>
+            <p className="hint">{CALL_BLURB[firstAndThird.call]}</p>
+            <div className="result">
+              {firstAndThird.notes.map((n) => (
+                <p key={n} className="note">{n}</p>
+              ))}
+              <ol className="assignments">
+                {firstAndThird.assignments.map((a) => (
+                  <li
+                    key={a.position}
+                    className={`${ROLE_CLASS[a.role.kind]}${highlight === a.position ? ' hot' : ''}`}
+                    onMouseEnter={() => setHighlight(a.position)}
+                    onMouseLeave={() => setHighlight(null)}
+                  >
+                    <span className="badge">{a.position}</span>
+                    <div>
+                      <strong>
+                        {ROLE_LABELS[a.role.kind]}
+                        {'base' in a.role && a.role.base ? ` ${a.role.base}` : ''}
+                        {'to' in a.role && a.role.to ? ` to ${a.role.to}` : ''}
+                      </strong>
+                      <p>{a.why}</p>
+                      {a.alternative && (
+                        <p className="alt-note">
+                          <em>{a.alternative.when}</em> &rarr; {a.alternative.why.toLowerCase()}
+                        </p>
+                      )}
+                      <code className="rule">{a.ruleId}</code>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </aside>
+        ) : drilling ? (
           <DrillPanel drill={drill} answer={answer} score={score} onNext={nextDrill} />
         ) : (
         <aside className="panel">
@@ -329,7 +419,7 @@ export default function App() {
                       aria-pressed={inRundown}
                       onClick={() => {
                         setInRundown(!inRundown);
-                        setScrub({ sig, index: 0, playing: false });
+                        setScrub({ sig: scrubSig, index: 0, playing: false });
                       }}
                     >
                       {inRundown

@@ -21,6 +21,8 @@ export type Role =
   | { kind: 'cover'; base: BaseId }
   | { kind: 'backupBase'; base: BaseId; on?: ThrowRef }
   | { kind: 'backupFielder'; fielder: Position }
+  /** Has the ball and is making the throw. */
+  | { kind: 'throws'; to: BaseId }
   /** Has the ball in a rundown, running the runner back toward `toward`. */
   | { kind: 'chase'; toward: BaseId }
   /** Threw it; now sprinting to the back of the line at `to`. */
@@ -35,6 +37,7 @@ export const ROLE_LABELS: Record<Role['kind'], string> = {
   cover: 'Covers',
   backupBase: 'Backs up',
   backupFielder: 'Backs up',
+  throws: 'Makes the throw',
   chase: 'Runs him back',
   rotate: 'Peels to the back of the line',
   watch: 'Reads the play',
@@ -153,6 +156,8 @@ export function roleKey(role: Role): string {
       return `relay:${role.on.to}`;
     case 'trail':
       return `trail:${role.behind}`;
+    case 'throws':
+      return `throws:${role.to}`;
     case 'chase':
       return `chase:${role.toward}`;
     case 'rotate':

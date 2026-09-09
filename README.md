@@ -6,6 +6,28 @@ fielders should be — who fields it, who covers, who cuts, who backs up.
 
 ## Status
 
+First and third. With runners on first and third, the play offers a path with
+no batted ball at all: the runner on first goes, and the defence has to weigh an
+out at second against a run scoring from third.
+
+That weighing is a coaching decision, not something an engine should make — it
+depends on the score, the inning and who is running. So the **call is an input**,
+the way the defensive posture is, and what the app produces is the mechanics of
+each call rather than a recommendation between them. Five are modelled: throw
+through, pitcher cuts, middle infielder cuts, snap throw behind to third, hold.
+
+The two cut calls reuse the conditional machinery — the man cutting it carries
+`If the runner on third breaks → cuts it and throws home`, drawn as a ring
+around him rather than a ghost elsewhere, because that read changes his job
+without moving him.
+
+**This is the least reliable thing in the codebase.** First-and-third defences
+are the most system-dependent area in the game, and a programme running
+different names and different responsibilities is not wrong. Two claims are
+flagged at the top of `playbook.md` for exactly this reason, including the one
+I am least confident in anywhere: that the shortstop covers second against a
+right-handed hitter and the second baseman against a left-hander.
+
 Rundowns. A throw to second, third or home can leave a runner hung up between
 that bag and the one behind it, and the play offers to follow it there.
 
@@ -69,7 +91,7 @@ Known gaps, all deliberate:
   third option, and the defence is always shown playing for him going.
 - **Nothing changes between *phases*.** A fielder's job can depend on the read,
   but not on where an earlier throw in the same play went.
-- **No first-and-third plays, no pickoffs.** A rundown between home and first
+- **No pickoffs.** A rundown between home and first
   is not offered either: it needs a dropped third strike or a misplayed bunt,
   not a batted ball being fielded.
 - **A rundown is one throw.** The real thing can take three; the model shows the

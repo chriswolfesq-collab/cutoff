@@ -19,6 +19,11 @@ import {
 } from '../field/zones';
 import { primaryFor } from '../field/primary';
 import {
+  buildFirstAndThird,
+  CALL_NAMES,
+  FIRST_THIRD_CALLS,
+} from './firstAndThird';
+import {
   DEFAULT_SITUATION,
   isPlausible,
   type BallType,
@@ -361,6 +366,37 @@ function rundownSection(): string {
   ].join('\n');
 }
 
+/** First-and-third calls, and who does what on each. */
+function firstThirdSection(): string {
+  const situation: Situation = {
+    ...DEFAULT_SITUATION,
+    runners: { first: true, second: false, third: true },
+    outs: 1,
+  };
+  const cfg = FIELD_CONFIGS.youth;
+
+  const rows = FIRST_THIRD_CALLS.map((call) => {
+    const play = buildFirstAndThird(situation, cfg, call);
+    const find = (test: (a: Assignment) => boolean) =>
+      play.assignments.filter(test).map((a) => a.position).join(', ') || '—';
+
+    const cut = play.assignments.find((a) => a.alternative);
+    return `| ${CALL_NAMES[call]} | ${find((a) => a.role.kind === 'throws')} | ${find(
+      (a) => a.role.kind === 'cover' && a.role.base === 'second',
+    )} | ${cut ? cut.position : '—'} | ${find((a) => a.role.kind === 'backupBase')} |`;
+  });
+
+  return [
+    'Runners on first and third, one out, right-handed hitter, youth field.',
+    'The call is an input, not a recommendation — which one you run depends on',
+    'the score, the inning and who is running, none of which this models.',
+    '',
+    '| Call | Throws it | Covers second | Cuts it | Backs up |',
+    '| --- | --- | --- | --- | --- |',
+    ...rows,
+  ].join('\n');
+}
+
 function backupTable() {
   return [
     '| Base | Order of preference |',
@@ -409,16 +445,24 @@ only gets through one section, make it this one.
    (\`primary.shallow.air\`), at every depth in that band.
 10. **A ball on the ground within 16 feet of the mound is the pitcher's**
     (\`primary.comebacker\`), whatever sector it is in.
-11. **In a rundown the ball starts with whoever took the throw** — he is the
+11. **On a straight steal the shortstop covers second against a right-handed
+    hitter, the second baseman against a left-hander** (\`ft.cover.second\`).
+    In a real game this is a signal between the two of them, and plenty of
+    programmes call it the other way round. This is the single claim here I am
+    least confident in.
+12. **The five first-and-third calls** (\`ft.*\`) are common ones, but this is
+    the most system-dependent area in the game — a programme running different
+    names and different responsibilities is not wrong. Check the whole section.
+13. **In a rundown the ball starts with whoever took the throw** — he is the
     one who runs the man back, and after his throw he goes to the back of the
     line at the bag he threw to (\`rundown.rotate\`). One throw is the target.
-12. **A read has exactly two lines** — the runner goes, or he holds. There is no
+14. **A read has exactly two lines** — the runner goes, or he holds. There is no
     third option, and the defence is always shown playing for the runner going.
     See Reads below.
 
 ## What is not modelled
 
-First-and-third plays, pickoffs, and the batter-runner taking an extra base
+Pickoffs, and the batter-runner taking an extra base
 while the throw is elsewhere. A rundown between home and first is not offered
 either — it needs a dropped third strike or a misplayed bunt, not a batted ball
 being fielded.
@@ -464,6 +508,10 @@ export function buildPlaybook(): string {
     'and any fielder whose job differs between the two has to read the throw.',
     '',
     readsSection(),
+    '## First and third',
+    '',
+    firstThirdSection(),
+    '',
     '## Rundowns',
     '',
     rundownSection(),

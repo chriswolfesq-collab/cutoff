@@ -197,21 +197,29 @@ export default function Field({
 
       {/* Where a fielder goes instead if the throw is read the other way.
           Hollow and dashed: this is a job he may not end up with. */}
-      {play &&
-        !override &&
-        !atSet &&
-        play.assignments
+      {!atSet &&
+        (override ?? play?.assignments ?? [])
           .filter((a) => a.alternative)
           .map((a) => {
             const alt = a.alternative!;
             const to = toScreen(alt.target);
+            // Some reads move a man; some only change what he does from where he
+            // already is. A ghost hidden under his own marker reads as nothing,
+            // so that case gets a ring around him instead.
+            const moves = dist(a.target, alt.target) > 5 * unit;
             return (
-              <g key={`alt-${a.position}`} className={`alt ${ROLE_CLASS[alt.role.kind]}`} pointerEvents="none">
-                <path d={path([a.target, alt.target])} />
-                <circle cx={to.x} cy={to.y} r={r} />
-                <text x={to.x} y={to.y} dy={r * 0.36} fontSize={r * 1.05}>
-                  {POSITION_NUMBERS[a.position]}
-                </text>
+              <g
+                key={`alt-${a.position}`}
+                className={`alt ${ROLE_CLASS[alt.role.kind]}${moves ? '' : ' halo'}`}
+                pointerEvents="none"
+              >
+                {moves && <path d={path([a.target, alt.target])} />}
+                <circle cx={to.x} cy={to.y} r={moves ? r : r * 1.6} />
+                {moves && (
+                  <text x={to.x} y={to.y} dy={r * 0.36} fontSize={r * 1.05}>
+                    {POSITION_NUMBERS[a.position]}
+                  </text>
+                )}
               </g>
             );
           })}
