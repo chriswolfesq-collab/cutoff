@@ -11,7 +11,11 @@ Every scenario has its own link, so a play can be sent to somebody:
 
 **[The playbook](playbook.md)** is every convention the engine encodes, generated
 by running it. It opens with the seventeen calls most worth arguing about, each
-tagged with the rule id that produced it. If you disagree with one, quote the id.
+tagged with the rule id that produced it. If you disagree with one, quote the id
+— or say so on the
+[reviewable version](https://claude.ai/code/artifact/31fd83ce-98c3-431b-b362-f38184557a06),
+which records agree / disagree / not sure against each call and keeps the notes
+where the next reader can see them.
 
 ## Status
 
