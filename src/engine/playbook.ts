@@ -321,7 +321,7 @@ function readsSection(): string {
         (a) =>
           `| ${a.position} | ${roleKey(a.role)} | ${a
             .alternatives!.map((alt) => `${roleKey(alt.role)} _(${alt.when.toLowerCase()})_`)
-            .join('<br>')} |`,
+            .join(' \u00b7 ')} |`,
       ),
       '',
     );

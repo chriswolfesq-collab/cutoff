@@ -12,7 +12,6 @@ import {
   FIELD_CONFIGS,
   along,
   bases as baseCoords,
-  dist,
   type Point,
 } from '../field/geometry';
 import { alignment, POSITIONS, type Position } from '../field/alignments';
@@ -366,8 +365,9 @@ export function resolvePlay(input: PlayInput): ResolvedPlay {
       // other line is worth drawing, and so is swapping one for another.
       if (b.role.kind === 'watch') continue;
 
-      const movedFar = dist(a.target, b.target) > 10 * main.u;
-      if (roleKey(a.role) === roleKey(b.role) && !movedFar) continue;
+      // Same job a few feet over is not a read. Only a different job is worth
+      // putting in front of somebody as a decision.
+      if (roleKey(a.role) === roleKey(b.role)) continue;
 
       a.alternatives = [
         ...(a.alternatives ?? []),

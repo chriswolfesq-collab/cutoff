@@ -207,10 +207,9 @@ Plays for a throw to **home**. If the lead runner holds at third — **3rd**; If
 
 | Fielder | Plays for | Reads it the other way |
 | --- | --- | --- |
-| P | backup:home | backup:third _(if the lead runner holds at third)_<br>cover:second _(if the batter-runner rounds hard)_ |
-| 2B | cover:second | cover:second _(if the batter-runner rounds hard)_ |
+| P | backup:home | backup:third _(if the lead runner holds at third)_ · cover:second _(if the batter-runner rounds hard)_ |
 | 3B | watch | cover:third _(if the lead runner holds at third)_ |
-| SS | relay:home | relay:third _(if the lead runner holds at third)_<br>relay:second _(if the batter-runner rounds hard)_ |
+| SS | relay:home | relay:third _(if the lead runner holds at third)_ · relay:second _(if the batter-runner rounds hard)_ |
 | RF | watch | backup:second _(if the batter-runner rounds hard)_ |
 
 ### Fly ball caught deep in centre, man on third

@@ -255,7 +255,6 @@ describe(`resolver invariants over ${PLAYS.length} plays`, () => {
     const failures: string[] = [];
     for (const p of PLAYS) {
       const play = resolvePlay(p);
-      const u = FIELD_CONFIGS[p.situation.level].baseDistance / 90;
       for (const a of play.assignments) {
         for (const alt of a.alternatives ?? []) {
           if (alt.role.kind === 'watch') {
@@ -264,8 +263,8 @@ describe(`resolver invariants over ${PLAYS.length} plays`, () => {
           if (!alt.when.trim() || !alt.ruleId.trim()) {
             failures.push(`${label(p)}: ${a.position} alternative has no read or rule`);
           }
-          if (roleKey(alt.role) === roleKey(a.role) && dist(alt.target, a.target) <= 10 * u) {
-            failures.push(`${label(p)}: ${a.position} alternative is the same job in the same place`);
+          if (roleKey(alt.role) === roleKey(a.role)) {
+            failures.push(`${label(p)}: ${a.position} alternative is the same job`);
           }
         }
       }
