@@ -679,3 +679,52 @@ button:focus-visible,
 
 .special .segmented button { font-size: 0.78rem; }
 .special .link-button { margin-left: auto; }
+
+/* --- hover callout --- */
+
+/* The role colour, so the box reads as the same object as the marker and the
+   line in the panel. Falls back to the watch grey for a role without one. */
+.callout { --callout-colour: var(--r-watch); }
+.callout.role-primary { --callout-colour: var(--r-primary); }
+.callout.role-cover { --callout-colour: var(--r-cover); }
+.callout.role-secondary { --callout-colour: var(--r-secondary); }
+.callout.role-backup { --callout-colour: var(--r-backup); }
+.callout.role-cut { --callout-colour: var(--r-cut); }
+
+.callout-box {
+  /* Opaque: it sits over the field and has to be read, not seen through. */
+  fill: var(--panel);
+  stroke: var(--callout-colour);
+  stroke-width: 1.2;
+  stroke-opacity: 0.7;
+}
+
+.callout-spine { fill: var(--callout-colour); }
+
+.callout text {
+  fill: var(--fg);
+  font-family: inherit;
+}
+
+.callout-eyebrow {
+  fill: var(--fg-dim);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.callout-title {
+  fill: var(--callout-colour);
+  font-weight: 700;
+}
+
+.callout-why { fill: var(--fg); }
+
+.callout-alt {
+  fill: var(--fg-dim);
+  font-style: italic;
+}
+
+/* A fielder with a job has something to say on hover; one without does not,
+   and in drill mode the click is the answer, so that cursor wins. */
+.fielder.explained:not(.answerable) { cursor: help; }
