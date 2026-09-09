@@ -50,7 +50,12 @@ only gets through one section, make it this one.
 14. **In a rundown the ball starts with whoever took the throw** — he is the
     one who runs the man back, and after his throw he goes to the back of the
     line at the bag he threw to (`rundown.rotate`). One throw is the target.
-15. **A play can carry more than one read.** A base hit with a man on second
+15. **Only first base gets a second man** (`secondary.first`) — the pitcher
+    when somebody else covers, the second baseman when the pitcher does. No
+    other bag has one, on the grounds that the cover there is standing still
+    rather than arriving on the run. Whether second base deserves one on a
+    double play is worth an argument.
+16. **A play can carry more than one read.** A base hit with a man on second
     carries two: whether the lead runner holds at third, and whether the
     batter-runner rounds first behind the throw. Each fielder is shown every
     line he has a different job on. Whether that is one thing too many to put in
@@ -197,6 +202,7 @@ Plays for a throw to **home**. If he holds at third — **1st**.
 
 | Fielder | Plays for | Reads it the other way |
 | --- | --- | --- |
+| P | backup:home | secondary:first _(if he holds at third)_ |
 | C | cover:home | backup:first _(if he holds at third)_ |
 | 2B | watch | cover:second _(if he holds at third)_ |
 | RF | watch | backup:first _(if he holds at third)_ |
@@ -260,15 +266,19 @@ of the play until he gets behind the man he threw to.
 | 2nd and 3rd | 3B | SS | CF | LF | 3B → behind second |
 | 3rd and home | C | 3B | LF | P | C → behind third |
 
-## Who covers first
+## Who covers first, and who is behind him
 
-| Situation | Covers first |
-| --- | --- |
-| Ground ball to an infielder, normal defence | 1B |
-| First baseman fields it himself | P |
-| Bunt, normal defence | 1B |
-| Bunt, corners in | 2B |
-| Ground ball, infield in | 1B |
+The second man is not a backup. A backup stands behind the bag for a throw
+that gets away; the second man takes the throw itself if the cover, who is
+usually arriving on the run, does not beat the runner there.
+
+| Situation | Covers first | Second man |
+| --- | --- | --- |
+| Ground ball to an infielder, normal defence | 1B | P |
+| First baseman fields it himself | P | 2B |
+| Bunt, normal defence | 1B | — |
+| Bunt, corners in | 2B | 1B |
+| Ground ball, infield in | 1B | P |
 
 ## Backups
 

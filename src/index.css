@@ -19,6 +19,8 @@
   /* role colours, shared by the field markers and the assignment list */
   --r-primary: #ffb340;
   --r-cover: #66d17a;
+  /* Desaturated cover: the same job, one step back. */
+  --r-secondary: #7fae8b;
   --r-backup: #a78bfa;
   --r-cut: #5bc0eb;
   --r-watch: #7d8a72;

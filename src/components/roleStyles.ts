@@ -11,6 +11,7 @@ export const ROLE_CLASS: Record<Role['kind'], string> = {
   relay: 'role-cut',
   trail: 'role-cut',
   cover: 'role-cover',
+  secondary: 'role-secondary',
   backupBase: 'role-backup',
   backupFielder: 'role-backup',
   throws: 'role-primary',

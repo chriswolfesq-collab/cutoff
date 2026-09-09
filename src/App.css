@@ -385,6 +385,7 @@ code {
 
 .fielder.role-primary circle { fill: var(--r-primary); }
 .fielder.role-cover circle { fill: var(--r-cover); }
+.fielder.role-secondary circle { fill: var(--r-secondary); }
 .fielder.role-backup circle { fill: var(--r-backup); }
 .fielder.role-cut circle { fill: var(--r-cut); }
 .fielder.role-watch circle { fill: var(--r-watch); }
@@ -395,6 +396,7 @@ code {
 
 .route.role-primary { stroke: var(--r-primary); }
 .route.role-cover { stroke: var(--r-cover); }
+.route.role-secondary { stroke: var(--r-secondary); }
 .route.role-backup { stroke: var(--r-backup); }
 .route.role-cut { stroke: var(--r-cut); }
 .route.role-watch { stroke: var(--r-watch); opacity: 0.35; }
@@ -404,6 +406,7 @@ code {
 .alt { --alt-colour: var(--r-watch); }
 .alt.role-primary { --alt-colour: var(--r-primary); }
 .alt.role-cover { --alt-colour: var(--r-cover); }
+.alt.role-secondary { --alt-colour: var(--r-secondary); }
 .alt.role-backup { --alt-colour: var(--r-backup); }
 .alt.role-cut { --alt-colour: var(--r-cut); }
 
@@ -497,6 +500,7 @@ code {
 
 .assignments li.role-primary .badge { background: var(--r-primary); }
 .assignments li.role-cover .badge { background: var(--r-cover); }
+.assignments li.role-secondary .badge { background: var(--r-secondary); }
 .assignments li.role-backup .badge { background: var(--r-backup); }
 .assignments li.role-cut .badge { background: var(--r-cut); }
 .assignments li.role-watch .badge { background: var(--r-watch); }

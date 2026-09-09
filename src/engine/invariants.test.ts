@@ -441,6 +441,30 @@ describe(`resolver invariants over ${PLAYS.length} plays`, () => {
     assertNoFailures(failures);
   });
 
+  it('only puts a second man where somebody else is already covering', () => {
+    const failures: string[] = [];
+    for (const p of PLAYS) {
+      const play = resolvePlay(p);
+      for (const a of play.assignments) {
+        if (a.role.kind !== 'secondary') continue;
+        const base = a.role.base;
+
+        const cover = play.assignments.find(
+          (x) => x.role.kind === 'cover' && x.role.base === base,
+        );
+        if (!cover) {
+          failures.push(`${label(p)}: ${a.position} is second man at ${base} with nobody covering`);
+        } else if (cover.position === a.position) {
+          failures.push(`${label(p)}: ${a.position} is his own second man at ${base}`);
+        }
+        if (!play.throws.some((t) => t.to === base)) {
+          failures.push(`${label(p)}: second man at ${base} with no throw there`);
+        }
+      }
+    }
+    assertNoFailures(failures);
+  });
+
   it('sends the primary fielder to the ball', () => {
     const failures: string[] = [];
     for (const p of PLAYS) {

@@ -175,6 +175,42 @@ function layerCoverage(ctx: Ctx) {
   }
 }
 
+/**
+ * Second man at the bag.
+ *
+ * The throw to first is the one that regularly needs two men. Whoever is
+ * covering is often arriving on the run and from an angle — a pitcher off the
+ * mound, a second baseman crossing behind him — and if he does not get there,
+ * somebody has to. This is not a backup: a backup stands behind the bag for a
+ * throw that gets away, and this man takes the throw itself.
+ */
+function layerSecondary(ctx: Ctx) {
+  if (!isInfieldBand(ctx.zone.band)) return;
+  if (!ctx.throws.some((t) => t.to === 'first')) return;
+
+  const covering = [...ctx.out.values()].find(
+    (a) => a.role.kind === 'cover' && a.role.base === 'first',
+  );
+  if (!covering) return;
+
+  // Whoever is not already the cover, in the order they can realistically get
+  // there: off the mound is the shortest trip, then across from second.
+  const order: Position[] =
+    covering.position === 'P' ? ['2B', '1B'] : covering.position === '1B' ? ['P', '2B'] : ['P', '1B'];
+
+  const who = order.find((p) => !ctx.out.has(p));
+  if (!who) return;
+
+  put(
+    ctx,
+    who,
+    { kind: 'secondary', base: 'first' },
+    along(ctx.bags.first, ctx.start[who], 10 * ctx.u),
+    `Second man to the bag behind the ${covering.position} — takes the throw if he does not get there.`,
+    'secondary.first',
+  );
+}
+
 // --- layer 5: backups ----------------------------------------------------
 
 /** Somebody gets in behind the man with the ball. */
@@ -276,20 +312,6 @@ function layerRemainder(ctx: Ctx) {
   for (const pos of POSITIONS) {
     if (ctx.out.has(pos)) continue;
 
-    // The pitcher's job on a routine infield play is simply to get off the
-    // mound toward the line, in case the throw pulls the first baseman off.
-    if (pos === 'P' && live && isInfieldBand(ctx.zone.band)) {
-      put(
-        ctx,
-        'P',
-        { kind: 'watch' },
-        along(ctx.start.P, ctx.bags.first, 18 * ctx.u),
-        'Off the mound toward the line — available if the throw pulls the first baseman off.',
-        'remainder.pitcher',
-      );
-      continue;
-    }
-
     put(
       ctx,
       pos,
@@ -327,6 +349,7 @@ function resolveOnce(input: PlayInput, branchIndex: number | null): Ctx {
   layerThrows(ctx, branchIndex);
   layerCutoffRelay(ctx);
   layerCoverage(ctx);
+  layerSecondary(ctx);
   layerBackups(ctx);
   layerRemainder(ctx);
   layerSpacing(ctx);

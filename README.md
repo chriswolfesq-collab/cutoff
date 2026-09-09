@@ -6,6 +6,21 @@ fielders should be — who fields it, who covers, who cuts, who backs up.
 
 ## Status
 
+Secondary coverage. The throw to first is the one that regularly needs two men:
+whoever is covering is usually arriving on the run and from an angle — a pitcher
+off the mound, a second baseman crossing behind him — and if he does not beat
+the runner there, somebody has to.
+
+That needed a role the union did not have. It is not `cover`, which takes the
+throw, and it is not `backupBase`, which stands behind the bag for a throw that
+gets away. The second man is *at* the bag, behind the cover, and takes the throw
+itself.
+
+It also retires a fudge. The pitcher used to fall through to a catch-all that
+gave him `watch` with a reason describing exactly this job — "off the mound
+toward the line, available if the throw pulls the first baseman off". He now
+has the job the reason was describing.
+
 The batter-runner taking an extra base. While the throw is going to the plate or
 to third, he is rounding first behind it — and the man cutting it is the only
 one in a position to take him.
@@ -125,9 +140,8 @@ Known gaps, all deliberate:
   mechanics you are trying to execute, not a simulation of failing to.
 - **The batter-runner is not tracked past his first destination** — nobody
   reacts to him taking an extra base while the throw is elsewhere.
-- **No secondary coverage.** On a ball to the right side the second baseman
-  should break to first behind the pitcher; expressing that needs a notion of
-  secondary assignment the `Role` union does not have yet.
+- **Only first base gets a second man.** No other bag has one, on the grounds
+  that the cover there is standing still rather than arriving on the run.
 - **The first baseman does not trail the runner on a base hit.** He is left
   idle rather than given a job nobody is confident about.
 

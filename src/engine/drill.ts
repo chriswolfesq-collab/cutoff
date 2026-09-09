@@ -105,6 +105,8 @@ function prompt(key: string): string | null {
   switch (kind) {
     case 'cover':
       return `Who covers ${BASE_WORD[arg]}?`;
+    case 'secondary':
+      return `Who is the second man at ${BASE_WORD[arg]}?`;
     case 'cutoff':
       return `Who cuts the throw to ${BASE_WORD[arg]}?`;
     case 'relay':

@@ -48,6 +48,8 @@ export const CORPUS: Scenario[] = [
       SS: 'primary',
       '1B': 'cover:first',
       '2B': 'cover:second',
+      // Off the mound to the bag, not merely out of the way.
+      P: 'secondary:first',
       RF: 'backup:first',
       C: 'backup:first',
       LF: 'backupFielder:SS',
@@ -61,6 +63,8 @@ export const CORPUS: Scenario[] = [
     expect: {
       '1B': 'primary',
       P: 'cover:first',
+      // Behind the pitcher, in case he does not beat the runner to the bag.
+      '2B': 'secondary:first',
       SS: 'cover:second',
       RF: 'backup:first',
       C: 'backup:first',

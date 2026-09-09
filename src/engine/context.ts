@@ -62,8 +62,8 @@ export type Ctx = {
  * or standing on a base holds his spot, a backup slides.
  */
 const ROLE_PRIORITY: Record<Role['kind'], number> = {
-  primary: 0, throws: 0, chase: 0, cover: 1, cutoff: 2, relay: 2, trail: 3,
-  backupBase: 4, rotate: 4, backupFielder: 5, watch: 6,
+  primary: 0, throws: 0, chase: 0, cover: 1, secondary: 2, cutoff: 3, relay: 3,
+  trail: 4, backupBase: 5, rotate: 5, backupFielder: 6, watch: 7,
 };
 
 export function spaceOut(list: Assignment[], min: number) {

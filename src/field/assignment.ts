@@ -19,6 +19,12 @@ export type Role =
   | { kind: 'relay'; on: ThrowRef }
   | { kind: 'trail'; behind: Position }
   | { kind: 'cover'; base: BaseId }
+  /**
+   * At the bag behind whoever is covering it. Not a backup — a backup stands
+   * behind the bag for a throw that gets away; this man takes the throw itself
+   * if the cover does not get there.
+   */
+  | { kind: 'secondary'; base: BaseId }
   | { kind: 'backupBase'; base: BaseId; on?: ThrowRef }
   | { kind: 'backupFielder'; fielder: Position }
   /** Has the ball and is making the throw. */
@@ -35,6 +41,7 @@ export const ROLE_LABELS: Record<Role['kind'], string> = {
   relay: 'Relay',
   trail: 'Trailer',
   cover: 'Covers',
+  secondary: 'Second man at',
   backupBase: 'Backs up',
   backupFielder: 'Backs up',
   throws: 'Makes the throw',
@@ -150,6 +157,8 @@ export function roleKey(role: Role): string {
       return 'watch';
     case 'cover':
       return `cover:${role.base}`;
+    case 'secondary':
+      return `secondary:${role.base}`;
     case 'backupBase':
       return `backup:${role.base}`;
     case 'backupFielder':

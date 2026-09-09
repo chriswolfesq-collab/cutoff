@@ -239,18 +239,25 @@ function coverFirstTable() {
   const groundToFirst: Spot = { ball: 'ground', at: { x: 55, y: 78 }, outcome: 'fielded' };
   const buntMiddle: Spot = { ball: 'bunt', at: { x: 0, y: 30 }, outcome: 'fielded' };
 
-  const rows: [string, string][] = [
-    ['Ground ball to an infielder, normal defence', whoHas(groundToShort, {}, 'cover:first')],
-    ['First baseman fields it himself', whoHas(groundToFirst, {}, 'cover:first')],
-    ['Bunt, normal defence', whoHas(buntMiddle, {}, 'cover:first')],
-    ['Bunt, corners in', whoHas(buntMiddle, { posture: 'cornersIn' }, 'cover:first')],
-    ['Ground ball, infield in', whoHas(groundToShort, { posture: 'infieldIn' }, 'cover:first')],
+  const rows: [string, Spot, Partial<Situation>][] = [
+    ['Ground ball to an infielder, normal defence', groundToShort, {}],
+    ['First baseman fields it himself', groundToFirst, {}],
+    ['Bunt, normal defence', buntMiddle, {}],
+    ['Bunt, corners in', buntMiddle, { posture: 'cornersIn' }],
+    ['Ground ball, infield in', groundToShort, { posture: 'infieldIn' }],
   ];
 
   return [
-    '| Situation | Covers first |',
-    '| --- | --- |',
-    ...rows.map(([what, who]) => `| ${what} | ${who} |`),
+    'The second man is not a backup. A backup stands behind the bag for a throw',
+    'that gets away; the second man takes the throw itself if the cover, who is',
+    'usually arriving on the run, does not beat the runner there.',
+    '',
+    '| Situation | Covers first | Second man |',
+    '| --- | --- | --- |',
+    ...rows.map(
+      ([what, spot, over]) =>
+        `| ${what} | ${whoHas(spot, over, 'cover:first')} | ${whoHas(spot, over, 'secondary:first')} |`,
+    ),
   ].join('\n');
 }
 
@@ -503,7 +510,12 @@ only gets through one section, make it this one.
 14. **In a rundown the ball starts with whoever took the throw** — he is the
     one who runs the man back, and after his throw he goes to the back of the
     line at the bag he threw to (\`rundown.rotate\`). One throw is the target.
-15. **A play can carry more than one read.** A base hit with a man on second
+15. **Only first base gets a second man** (\`secondary.first\`) — the pitcher
+    when somebody else covers, the second baseman when the pitcher does. No
+    other bag has one, on the grounds that the cover there is standing still
+    rather than arriving on the run. Whether second base deserves one on a
+    double play is worth an argument.
+16. **A play can carry more than one read.** A base hit with a man on second
     carries two: whether the lead runner holds at third, and whether the
     batter-runner rounds first behind the throw. Each fielder is shown every
     line he has a different job on. Whether that is one thing too many to put in
@@ -570,7 +582,7 @@ export function buildPlaybook(): string {
     '',
     rundownSection(),
     '',
-    '## Who covers first',
+    '## Who covers first, and who is behind him',
     '',
     coverFirstTable(),
     '',
