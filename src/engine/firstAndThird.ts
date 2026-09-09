@@ -156,6 +156,7 @@ export function buildFirstAndThird(
         alternatives: [
           {
             when: 'If the runner on third breaks',
+            reads: ['If the runner on third breaks'],
             role: { kind: 'throws', to: 'home' },
             target: upTheMiddle(50 * u),
             why: 'Cuts it and throws home.',
@@ -173,6 +174,7 @@ export function buildFirstAndThird(
         alternatives: [
           {
             when: 'If the runner on third breaks',
+            reads: ['If the runner on third breaks'],
             role: { kind: 'throws', to: 'home' },
             target: upTheMiddle(72 * u),
             why: 'Cuts it and throws home.',

@@ -17,5 +17,6 @@ export const ROLE_CLASS: Record<Role['kind'], string> = {
   throws: 'role-primary',
   chase: 'role-primary',
   rotate: 'role-cut',
+  trailRunner: 'role-secondary',
   watch: 'role-watch',
 };

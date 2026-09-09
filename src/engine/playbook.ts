@@ -515,7 +515,11 @@ only gets through one section, make it this one.
     other bag has one, on the grounds that the cover there is standing still
     rather than arriving on the run. Whether second base deserves one on a
     double play is worth an argument.
-16. **A play can carry more than one read.** A base hit with a man on second
+16. **On a ball to the outfield the first baseman goes with the batter-runner**
+    (\`trail.firstBaseman\`) whenever he is not cutting the throw — which is
+    why a rundown between first and second finds him already there. Some
+    programmes leave him on the bag instead.
+17. **A play can carry more than one read.** A base hit with a man on second
     carries two: whether the lead runner holds at third, and whether the
     batter-runner rounds first behind the throw. Each fielder is shown every
     line he has a different job on. Whether that is one thing too many to put in
@@ -524,10 +528,9 @@ only gets through one section, make it this one.
 ## What is not modelled
 
 A rundown between home and first is not offered — it needs a dropped third
-strike or a misplayed bunt, not a batted ball being fielded. The first baseman
-never trails a runner on a base hit or a steal, which some programmes teach.
-Beyond that, what is here is what is here: the gaps now are wrong calls rather
-than missing ones, which is what this document is for.
+strike or a misplayed bunt, not a batted ball being fielded. Beyond that, what
+is here is what is here: the gaps now are wrong calls rather than missing ones,
+which is what this document is for.
 `;
 
 export function buildPlaybook(): string {

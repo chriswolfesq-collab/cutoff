@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import Field from './components/Field';
 import Controls, { Segmented } from './components/Controls';
 import { POSITION_NAMES, type Position } from './field/alignments';
-import { ROLE_LABELS } from './field/assignment';
+import { roleLabel } from './field/assignment';
 import { resolvePlay } from './engine/resolve';
 import { generateDrill, rngFrom, type Drill } from './engine/drill';
 import {
@@ -404,11 +404,7 @@ export default function App() {
                   >
                     <span className="badge">{a.position}</span>
                     <div>
-                      <strong>
-                        {ROLE_LABELS[a.role.kind]}
-                        {'base' in a.role && a.role.base ? ` ${a.role.base}` : ''}
-                        {'to' in a.role && a.role.to ? ` to ${a.role.to}` : ''}
-                      </strong>
+                      <strong>{roleLabel(a.role)}</strong>
                       <p>{a.why}</p>
                       {a.alternatives?.map((alt) => (
                         <p key={alt.when} className="alt-note">
@@ -518,19 +514,11 @@ export default function App() {
                       >
                         <span className="badge">{a.position}</span>
                         <div>
-                          <strong>
-                            {ROLE_LABELS[a.role.kind]}
-                            {'base' in a.role && a.role.base ? ` ${a.role.base}` : ''}
-                            {'fielder' in a.role && a.role.fielder ? ` the ${a.role.fielder}` : ''}
-                          </strong>
+                          <strong>{roleLabel(a.role)}</strong>
                           <p>{a.why}</p>
                           {a.alternatives?.map((alt) => (
                             <p key={alt.when} className="alt-note">
-                              <em>{alt.when}</em> &rarr;{' '}
-                              {ROLE_LABELS[alt.role.kind].toLowerCase()}
-                              {'base' in alt.role && alt.role.base ? ` ${alt.role.base}` : ''}
-                              {'to' in alt.role && alt.role.to ? ` to ${alt.role.to}` : ''}
-                              {'on' in alt.role && alt.role.on ? ` to ${alt.role.on.to}` : ''}
+                              <em>{alt.when}</em> &rarr; {roleLabel(alt.role).toLowerCase()}
                             </p>
                           ))}
                           <code className="rule">{a.ruleId}</code>

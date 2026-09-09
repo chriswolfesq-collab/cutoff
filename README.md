@@ -6,6 +6,21 @@ fielders should be — who fields it, who covers, who cuts, who backs up.
 
 ## Status
 
+The first baseman trailing the runner — the last thing on the original gap list.
+
+On a ball to the outfield the batter-runner is rounding first, and if the first
+baseman is not cutting the throw he has nothing else to do, so he goes with him
+and stays between him and the bag. That is what puts a man at first if the
+runner gets hung up between first and second — the rundown module already named
+the first baseman as the receiver there, and this is what actually gets him
+there.
+
+It also produced the first case of a fielder reaching the same job by two
+different reads: on a single with a man on second he cuts the throw home, and if
+*either* the lead runner holds or the batter rounds hard, he is trailing
+instead. Those collapse into one line naming both conditions rather than the
+same alternative printed twice.
+
 Secondary coverage. The throw to first is the one that regularly needs two men:
 whoever is covering is usually arriving on the run and from an angle — a pitcher
 off the mound, a second baseman crossing behind him — and if he does not beat
@@ -142,6 +157,8 @@ Known gaps, all deliberate:
   reacts to him taking an extra base while the throw is elsewhere.
 - **Only first base gets a second man.** No other bag has one, on the grounds
   that the cover there is standing still rather than arriving on the run.
+- **On a steal the first baseman does not trail**, because the runner is gone
+  and there is nothing to follow — he simply comes off the bag.
 - **The first baseman does not trail the runner on a base hit.** He is left
   idle rather than given a job nobody is confident about.
 

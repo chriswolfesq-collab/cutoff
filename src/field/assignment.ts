@@ -33,22 +33,51 @@ export type Role =
   | { kind: 'chase'; toward: BaseId }
   /** Threw it; now sprinting to the back of the line at `to`. */
   | { kind: 'rotate'; to: BaseId }
+  /**
+   * Following the batter-runner, staying between him and `base`. If the runner
+   * gets hung up, this is the man who has that bag.
+   */
+  | { kind: 'trailRunner'; base: BaseId }
   | { kind: 'watch' };
 
-export const ROLE_LABELS: Record<Role['kind'], string> = {
-  primary: 'Fields the ball',
-  cutoff: 'Cutoff',
-  relay: 'Relay',
-  trail: 'Trailer',
-  cover: 'Covers',
-  secondary: 'Second man at',
-  backupBase: 'Backs up',
-  backupFielder: 'Backs up',
-  throws: 'Makes the throw',
-  chase: 'Runs him back',
-  rotate: 'Peels to the back of the line',
-  watch: 'Reads the play',
-};
+/**
+ * The whole label for a role, arguments included.
+ *
+ * Kept in one place because the pieces do not compose the same way: a cover
+ * takes a bag, a cutoff takes a destination, and a man trailing a runner takes
+ * neither — sticking the argument on the end generically produced "Trails the
+ * runner first".
+ */
+export function roleLabel(role: Role): string {
+  switch (role.kind) {
+    case 'primary':
+      return 'Fields the ball';
+    case 'throws':
+      return `Makes the throw to ${role.to}`;
+    case 'chase':
+      return `Runs him back toward ${role.toward}`;
+    case 'rotate':
+      return `Peels to the back of the line at ${role.to}`;
+    case 'cover':
+      return `Covers ${role.base}`;
+    case 'secondary':
+      return `Second man at ${role.base}`;
+    case 'cutoff':
+      return `Cuts the throw to ${role.on.to}`;
+    case 'relay':
+      return `Relay to ${role.on.to}`;
+    case 'trail':
+      return `Trails the ${role.behind}`;
+    case 'trailRunner':
+      return 'Trails the batter-runner';
+    case 'backupBase':
+      return `Backs up ${role.base}`;
+    case 'backupFielder':
+      return `Backs up the ${role.fielder}`;
+    case 'watch':
+      return 'Reads the play';
+  }
+}
 
 /**
  * A play unfolds as a sequence: the set before the pitch, contact, then one
@@ -82,6 +111,11 @@ export type PlayPhase = {
 export type Alternative = {
   /** The read, in coaching terms: "If he holds at third". */
   when: string;
+  /**
+   * The branch conditions this covers. Usually one; more when the same job
+   * comes up whichever way several reads go, and `when` names them together.
+   */
+  reads: string[];
   role: Role;
   target: Point;
   why: string;
@@ -175,5 +209,7 @@ export function roleKey(role: Role): string {
       return `chase:${role.toward}`;
     case 'rotate':
       return `rotate:${role.to}`;
+    case 'trailRunner':
+      return `trailRunner:${role.base}`;
   }
 }

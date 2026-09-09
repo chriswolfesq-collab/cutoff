@@ -272,10 +272,14 @@ describe(`resolver invariants over ${PLAYS.length} plays`, () => {
     assertNoFailures(failures);
   });
 
-  it('reads each branch at most once per fielder', () => {
+  it('never offers a fielder the same job twice as an alternative', () => {
     const failures: string[] = [];
     for (const p of PLAYS) {
       for (const a of resolvePlay(p).assignments) {
+        const keys = (a.alternatives ?? []).map((x) => roleKey(x.role));
+        if (new Set(keys).size !== keys.length) {
+          failures.push(`${label(p)}: ${a.position} is offered ${keys.join(' and ')}`);
+        }
         const whens = (a.alternatives ?? []).map((x) => x.when);
         if (new Set(whens).size !== whens.length) {
           failures.push(`${label(p)}: ${a.position} has the same read twice`);
@@ -297,8 +301,14 @@ describe(`resolver invariants over ${PLAYS.length} plays`, () => {
           break;
         }
         for (const alt of a.alternatives) {
-          if (!reads.has(alt.when)) {
-            failures.push(`${label(p)}: ${a.position} reads a branch the play does not carry`);
+          for (const read of alt.reads) {
+            if (!reads.has(read)) {
+              failures.push(`${label(p)}: ${a.position} reads a branch the play does not carry`);
+            }
+          }
+          // The display text has to name every read it stands for.
+          if (alt.reads.length === 0) {
+            failures.push(`${label(p)}: ${a.position} alternative names no read`);
           }
         }
       }
@@ -460,6 +470,26 @@ describe(`resolver invariants over ${PLAYS.length} plays`, () => {
         if (!play.throws.some((t) => t.to === base)) {
           failures.push(`${label(p)}: second man at ${base} with no throw there`);
         }
+      }
+    }
+    assertNoFailures(failures);
+  });
+
+  it('only trails the runner on a ball that reached the outfield', () => {
+    const failures: string[] = [];
+    for (const p of PLAYS) {
+      const play = resolvePlay(p);
+      const trailer = play.assignments.find((a) => a.role.kind === 'trailRunner');
+      if (!trailer) continue;
+
+      if (trailer.position !== '1B') {
+        failures.push(`${label(p)}: ${trailer.position} is trailing, not the first baseman`);
+      }
+      if (p.outcome === 'caught') {
+        failures.push(`${label(p)}: trailing a batter who is out`);
+      }
+      if (play.throws.length === 0) {
+        failures.push(`${label(p)}: trailing with nothing thrown`);
       }
     }
     assertNoFailures(failures);

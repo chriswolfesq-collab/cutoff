@@ -17,7 +17,12 @@ import {
 import { alignment, POSITIONS, type Position } from '../field/alignments';
 import { classify, isInfieldBand } from '../field/zones';
 import { outfieldOwnerAt, primaryFor } from '../field/primary';
-import { roleKey, type Assignment, type ResolvedPlay } from '../field/assignment';
+import {
+  roleKey,
+  type Alternative,
+  type Assignment,
+  type ResolvedPlay,
+} from '../field/assignment';
 import type { BaseId, PlayInput } from '../field/play';
 import {
   BACKUP_ORDER,
@@ -304,6 +309,29 @@ function layerBackups(ctx: Ctx) {
   }
 }
 
+/**
+ * The first baseman follows the batter-runner.
+ *
+ * On a ball to the outfield the batter is rounding first, and if the first
+ * baseman is not cutting the throw he has nothing else to do — so he goes with
+ * him, staying between the runner and the bag. That is what puts a man at first
+ * if the runner gets hung up between first and second.
+ */
+function layerTrailRunner(ctx: Ctx) {
+  if (isInfieldBand(ctx.zone.band)) return;
+  if (ctx.throws.length === 0 || ctx.input.outcome === 'caught') return;
+  if (ctx.out.has('1B')) return;
+
+  put(
+    ctx,
+    '1B',
+    { kind: 'trailRunner', base: 'first' },
+    along(ctx.bags.first, ctx.bags.second, 12 * ctx.u),
+    'Goes with the batter-runner, staying between him and the bag — if he gets hung up, first base is covered.',
+    'trail.firstBaseman',
+  );
+}
+
 // --- layer 6: everyone else ----------------------------------------------
 
 function layerRemainder(ctx: Ctx) {
@@ -351,6 +379,7 @@ function resolveOnce(input: PlayInput, branchIndex: number | null): Ctx {
   layerCoverage(ctx);
   layerSecondary(ctx);
   layerBackups(ctx);
+  layerTrailRunner(ctx);
   layerRemainder(ctx);
   layerSpacing(ctx);
 
@@ -394,10 +423,32 @@ export function resolvePlay(input: PlayInput): ResolvedPlay {
 
       a.alternatives = [
         ...(a.alternatives ?? []),
-        { when, role: b.role, target: b.target, why: b.why, ruleId: b.ruleId },
+        { when, reads: [when], role: b.role, target: b.target, why: b.why, ruleId: b.ruleId },
       ];
     }
   });
+
+  /**
+   * A man who ends up with the same job whichever way the read goes has made
+   * one decision, not two. Collapse those into a single line that names both
+   * conditions, rather than printing the same alternative twice.
+   */
+  for (const a of assignments) {
+    if (!a.alternatives || a.alternatives.length < 2) continue;
+
+    const byRole = new Map<string, Alternative>();
+    for (const alt of a.alternatives) {
+      const key = roleKey(alt.role);
+      const seen = byRole.get(key);
+      if (!seen) {
+        byRole.set(key, { ...alt, reads: [...alt.reads] });
+      } else {
+        seen.when = `${seen.when}, or ${alt.when.replace(/^If /, 'if ')}`;
+        seen.reads.push(...alt.reads);
+      }
+    }
+    a.alternatives = [...byRole.values()];
+  }
 
   return withRundown({
     assignments,

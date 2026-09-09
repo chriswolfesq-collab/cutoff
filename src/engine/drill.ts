@@ -113,6 +113,8 @@ function prompt(key: string): string | null {
       return 'Who goes out as the relay man?';
     case 'trail':
       return 'Who trails the relay?';
+    case 'trailRunner':
+      return 'Who trails the batter-runner?';
     case 'backup':
       return `Who backs up the throw to ${BASE_WORD[arg]}?`;
     case 'backupFielder':

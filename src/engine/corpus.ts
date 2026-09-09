@@ -159,9 +159,8 @@ export const CORPUS: Scenario[] = [
       CF: 'backupFielder:LF',
       '2B': 'cover:second',
       RF: 'backup:second',
-      // Deliberately not asserting the first baseman: nobody throws there on a
-      // single, and whether he trails the runner is a judgement call the
-      // engine does not make yet.
+      // He is not cutting anything, so he goes with the runner.
+      '1B': 'trailRunner:first',
     },
   },
   {
@@ -321,7 +320,14 @@ export const CORPUS: Scenario[] = [
     at: { x: -160, y: 250 },
     outcome: 'drops',
     throws: ['home'],
-    expect: { LF: 'primary', '3B': 'cutoff:home', SS: 'cover:third', C: 'cover:home' },
+    // Adult splits the cut, so the first baseman is free to trail instead.
+    expect: {
+      LF: 'primary',
+      '3B': 'cutoff:home',
+      SS: 'cover:third',
+      C: 'cover:home',
+      '1B': 'trailRunner:first',
+    },
   },
   {
     name: 'Single to left with a man on second — pitcher backs up third or home',
@@ -339,6 +345,8 @@ export const CORPUS: Scenario[] = [
       '3B': 'cover:third',
       SS: 'cutoff:third',
       RF: 'backup:second',
+      // He trails whichever way the read goes, so it is one line, not two.
+      '1B': 'trailRunner:first',
     },
     expect: { P: 'backup:home', '1B': 'cutoff:home' },
   },
