@@ -9,6 +9,7 @@
 import type { Level } from './field/geometry';
 import type { Point } from './field/geometry';
 import { POSTURE_NAMES, type Posture } from './field/alignments';
+import { DEFAULT_SPEED, isSpeed, type Speed } from './playback';
 import {
   BALL_TYPES,
   DEFAULT_SITUATION,
@@ -24,6 +25,8 @@ export type UrlState = {
   ball: BallType;
   at: Point | null;
   outcome: Outcome | null;
+  /** Playback tempo, so a link opens at the speed it was watched at. */
+  speed: Speed;
 };
 
 export const DEFAULT_URL_STATE: UrlState = {
@@ -31,6 +34,7 @@ export const DEFAULT_URL_STATE: UrlState = {
   ball: 'ground',
   at: null,
   outcome: null,
+  speed: DEFAULT_SPEED,
 };
 
 const runnerBits = (s: Situation) =>
@@ -50,6 +54,7 @@ export function encode(state: UrlState): string {
     p.set('y', state.at.y.toFixed(1));
   }
   if (state.outcome) p.set('res', state.outcome);
+  p.set('sp', String(state.speed));
   return p.toString();
 }
 
@@ -65,6 +70,7 @@ export function decode(search: string): UrlState {
   const x = Number(p.get('x'));
   const y = Number(p.get('y'));
   const hasPoint = p.has('x') && p.has('y') && Number.isFinite(x) && Number.isFinite(y);
+  const speed = Number(p.get('sp'));
 
   const situation: Situation = {
     level: oneOf<Level>(p.get('lvl'), ['youth', 'adult']) ?? DEFAULT_SITUATION.level,
@@ -84,5 +90,7 @@ export function decode(search: string): UrlState {
     // A location outside any plausible park is a corrupt link, not a play.
     at: hasPoint && Math.hypot(x, y) < 600 ? { x, y } : null,
     outcome: oneOf<Outcome>(p.get('res'), OUTCOMES),
+    // A tempo the control cannot select is a corrupt link, not a preference.
+    speed: isSpeed(speed) ? speed : DEFAULT_SPEED,
   };
 }

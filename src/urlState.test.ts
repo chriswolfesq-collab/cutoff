@@ -12,6 +12,7 @@ const FULL: UrlState = {
   ball: 'bunt',
   at: { x: -27.4, y: 87.2 },
   outcome: 'fielded',
+  speed: 0.5,
 };
 
 describe('url state', () => {
@@ -29,8 +30,13 @@ describe('url state', () => {
   });
 
   it('rejects junk rather than passing it to the engine', () => {
-    const s = decode('lvl=martian&r=99&o=7&d=hexagon&bh=Q&b=frisbee&x=abc&y=1&res=exploded');
+    const s = decode('lvl=martian&r=99&o=7&d=hexagon&bh=Q&b=frisbee&x=abc&y=1&res=exploded&sp=99');
     expect(s).toEqual(DEFAULT_URL_STATE);
+  });
+
+  it('drops a speed the control cannot select', () => {
+    expect(decode('sp=0.3').speed).toBe(DEFAULT_URL_STATE.speed);
+    expect(decode('sp=0.125').speed).toBe(0.125);
   });
 
   it('drops a location outside any plausible park', () => {

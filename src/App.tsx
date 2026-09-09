@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import Field from './components/Field';
 import Controls, { Segmented } from './components/Controls';
 import { POSITION_NAMES, type Position } from './field/alignments';
@@ -21,6 +21,7 @@ import {
 } from './engine/pickoff';
 import DrillPanel, { type Score } from './components/DrillPanel';
 import { decode, encode } from './urlState';
+import { GAME_DWELL_MS, GAME_MOVE_MS, SPEEDS, type Speed } from './playback';
 import { ROLE_CLASS } from './components/roleStyles';
 import type { Level, Point } from './field/geometry';
 import { classify, DEPTH_BAND_NAMES, SECTOR_NAMES } from './field/zones';
@@ -61,6 +62,13 @@ export default function App() {
   // is read from an event and the sequence differs between sessions.
   const rng = useRef<() => number>(() => 0);
   const [highlight, setHighlight] = useState<Position | null>(null);
+  // Speed rides in the link with the rest of the scenario, so a play arrives at
+  // the tempo it was watched at.
+  const [speed, setSpeed] = useState<Speed>(() => decode(window.location.hash).speed);
+  // The move lives in CSS so the browser interpolates it; the dwell has to
+  // outlast it, so both are scaled from the one setting rather than tuned apart.
+  const moveMs = GAME_MOVE_MS / speed;
+  const dwellMs = GAME_DWELL_MS / speed;
 
   /**
    * Scrub position is stored against a signature of the play it belongs to, so
@@ -145,12 +153,15 @@ export default function App() {
 
   useEffect(() => {
     if (!playing) return;
+    // Longer than the move, so the eye can rest on the finished shape before
+    // the next phase pulls everyone away. Changing speed mid-play restarts the
+    // wait at the new tempo.
     const timer = setTimeout(
       () => setScrub((sc) => ({ ...sc, index: sc.index + 1 })),
-      950,
+      dwellMs,
     );
     return () => clearTimeout(timer);
-  }, [playing, phaseIndex]);
+  }, [playing, phaseIndex, dwellMs]);
 
   const togglePlay = () => {
     if (playing) {
@@ -164,9 +175,9 @@ export default function App() {
   // Keep the address bar in step so the link is always the play on screen.
   useEffect(() => {
     if (mode !== 'explore') return;
-    const query = encode({ situation, ball, at: pick, outcome });
+    const query = encode({ situation, ball, at: pick, outcome, speed });
     window.history.replaceState(null, '', `${window.location.pathname}#${query}`);
-  }, [mode, situation, ball, pick, outcome]);
+  }, [mode, situation, ball, pick, outcome, speed]);
 
   const choose = (p: Point) => {
     setPick(p);
@@ -331,7 +342,10 @@ export default function App() {
       )}
 
       <div className="layout">
-        <div className="stage">
+        <div
+          className="stage"
+          style={{ '--move': `${moveMs}ms` } as CSSProperties}
+        >
           <Field
             level={situation.level}
             posture={situation.posture}
@@ -358,6 +372,19 @@ export default function App() {
               >
                 {playing ? '❚❚' : '▶'}
               </button>
+              <div className="speeds" role="group" aria-label="Playback speed">
+                {SPEEDS.map((sp) => (
+                  <button
+                    key={sp.id}
+                    type="button"
+                    aria-pressed={speed === sp.id}
+                    title={`${sp.label} game speed`}
+                    onClick={() => setSpeed(sp.id)}
+                  >
+                    {sp.label}
+                  </button>
+                ))}
+              </div>
               <div className="phases" role="group" aria-label="Play phase">
                 {(sequence ?? []).map((ph) => (
                   <button
