@@ -585,3 +585,26 @@ header { flex-wrap: wrap; }
 
 button:focus-visible,
 .field:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* --- rundown --- */
+
+.rundown-toggle {
+  width: 100%;
+  margin-bottom: 0.6rem;
+  border: 1px dashed var(--r-primary);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--r-primary);
+  font: inherit;
+  font-size: 0.83rem;
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.rundown-toggle:hover { background: rgba(255, 179, 64, 0.1); }
+
+.rundown-toggle[aria-pressed='true'] {
+  border-style: solid;
+  background: rgba(255, 179, 64, 0.14);
+}

@@ -61,6 +61,20 @@ describe('golden corpus', () => {
         expect(actualAlts).toEqual(scenario.alternatives);
       }
 
+      if (scenario.rundown) {
+        const r = play.rundown;
+        expect(r).toBeDefined();
+        expect({
+          behind: r!.behind,
+          ahead: r!.ahead,
+          runner: r!.runner,
+          chaser: r!.assignments.find((a) => a.role.kind === 'chase')!.position,
+          receiver: r!.assignments.find(
+            (a) => a.role.kind === 'cover' && a.role.base === r!.behind,
+          )!.position,
+        }).toEqual(scenario.rundown);
+      }
+
       if (scenario.phases) {
         expect(play.phases.map((ph) => ph.label)).toEqual(scenario.phases);
       }

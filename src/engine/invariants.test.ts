@@ -303,6 +303,126 @@ describe(`resolver invariants over ${PLAYS.length} plays`, () => {
     assertNoFailures(failures);
   });
 
+  it('gives every rundown nine fielders, a chaser and a receiver', () => {
+    const failures: string[] = [];
+    for (const p of PLAYS) {
+      const r = resolvePlay(p).rundown;
+      if (!r) continue;
+
+      const seen = r.assignments.map((a) => a?.position);
+      if (r.assignments.some((a) => !a) || new Set(seen).size !== POSITIONS.length) {
+        failures.push(`${label(p)}: rundown has ${seen.join(',')}`);
+        continue;
+      }
+
+      const kinds = r.assignments.map((a) => a.role.kind);
+      if (kinds.filter((k) => k === 'chase').length !== 1) {
+        failures.push(`${label(p)}: rundown has ${kinds.filter((k) => k === 'chase').length} chasers`);
+      }
+      const receiver = r.assignments.find(
+        (a) => a.role.kind === 'cover' && a.role.base === r.behind,
+      );
+      if (!receiver) failures.push(`${label(p)}: nobody takes the throw at ${r.behind}`);
+    }
+    assertNoFailures(failures);
+  });
+
+  it('always drives the runner back to the base he came from', () => {
+    const back: Record<string, string> = {
+      first: 'home', second: 'first', third: 'second', home: 'third',
+    };
+    const failures: string[] = [];
+    for (const p of PLAYS) {
+      const r = resolvePlay(p).rundown;
+      if (!r) continue;
+      if (back[r.ahead] !== r.behind) {
+        failures.push(`${label(p)}: running him from ${r.ahead} to ${r.behind}`);
+      }
+      if (r.throw.to !== r.behind) {
+        failures.push(`${label(p)}: throw goes to ${r.throw.to}, not ${r.behind}`);
+      }
+      const chaser = r.assignments.find((a) => a.role.kind === 'chase');
+      if (chaser && r.throw.from !== chaser.position) {
+        failures.push(`${label(p)}: ${r.throw.from} throws but ${chaser.position} has the ball`);
+      }
+    }
+    assertNoFailures(failures);
+  });
+
+  it('rotates the chaser behind the man he threw to', () => {
+    const failures: string[] = [];
+    for (const p of PLAYS) {
+      const r = resolvePlay(p).rundown;
+      if (!r) continue;
+
+      const chaser = r.assignments.find((a) => a.role.kind === 'chase');
+      const move = r.afterThrow.find((a) => a.position === chaser?.position);
+      if (!move) {
+        failures.push(`${label(p)}: chaser never peels off`);
+        continue;
+      }
+      if (move.role.kind !== 'rotate') {
+        failures.push(`${label(p)}: chaser becomes ${move.role.kind}, not a rotation`);
+      }
+      // He has to end up behind the bag he threw to, not still in the baseline.
+      const bags = FIELD_CONFIGS[p.situation.level];
+      const limit = bags.fence.center + 60;
+      if (Math.hypot(move.target.x, move.target.y) > limit) {
+        failures.push(`${label(p)}: chaser rotates off the field`);
+      }
+    }
+    assertNoFailures(failures);
+  });
+
+  it('never stacks two fielders in a rundown, before or after the throw', () => {
+    const failures: string[] = [];
+    for (const p of PLAYS) {
+      const r = resolvePlay(p).rundown;
+      if (!r) continue;
+
+      const after = new Map(r.afterThrow.map((a) => [a.position, a]));
+      for (const stage of [r.assignments, r.assignments.map((a) => after.get(a.position) ?? a)]) {
+        for (let i = 0; i < stage.length; i++) {
+          for (let j = i + 1; j < stage.length; j++) {
+            const d = dist(stage[i].target, stage[j].target);
+            if (d < 3) {
+              failures.push(
+                `${label(p)}: ${stage[i].position} and ${stage[j].position} are ${d.toFixed(1)}' apart`,
+              );
+            }
+          }
+        }
+      }
+    }
+    assertNoFailures(failures);
+  });
+
+  it('only offers a rundown when there is a runner to hang up', () => {
+    const failures: string[] = [];
+    for (const p of PLAYS) {
+      const play = resolvePlay(p);
+      if (!play.rundown) continue;
+      const { runners } = p.situation;
+      const present =
+        play.rundown.runner === 'batter' ? true : runners[play.rundown.runner];
+      if (!present) {
+        failures.push(`${label(p)}: hangs up a ${play.rundown.runner} who is not on base`);
+      }
+      if (!play.throws.some((t) => t.to === play.rundown!.ahead)) {
+        failures.push(`${label(p)}: rundown at ${play.rundown.ahead} with no throw there`);
+      }
+      // He cannot be caught short of a base he had already passed.
+      const startRank = { batter: 0, first: 1, second: 2, third: 3 }[play.rundown.runner];
+      const bagRank = { home: 0, first: 1, second: 2, third: 3 }[play.rundown.behind];
+      if (startRank > bagRank) {
+        failures.push(
+          `${label(p)}: runner from ${play.rundown.runner} hung up behind ${play.rundown.behind}`,
+        );
+      }
+    }
+    assertNoFailures(failures);
+  });
+
   it('sends the primary fielder to the ball', () => {
     const failures: string[] = [];
     for (const p of PLAYS) {

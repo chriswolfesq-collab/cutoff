@@ -55,6 +55,41 @@ export type Ctx = {
   branchWhen?: string;
 };
 
+/**
+ * Nine men resolved independently can land on top of each other — most often
+ * when the ball is fielded right beside a bag. Rather than special-case every
+ * such geometry, the least-committed man gives way: a fielder chasing the ball
+ * or standing on a base holds his spot, a backup slides.
+ */
+const ROLE_PRIORITY: Record<Role['kind'], number> = {
+  primary: 0, chase: 0, cover: 1, cutoff: 2, relay: 2, trail: 3,
+  backupBase: 4, rotate: 4, backupFielder: 5, watch: 6,
+};
+
+export function spaceOut(list: Assignment[], min: number) {
+  // A nudge can create a fresh collision, so keep going until nothing moves.
+  for (let pass = 0; pass < 8; pass++) {
+    let moved = false;
+
+    for (let i = 0; i < list.length; i++) {
+      for (let j = i + 1; j < list.length; j++) {
+        const a = list[i];
+        const b = list[j];
+        const d = dist(a.target, b.target);
+        if (d >= min) continue;
+
+        const [fixed, mover] =
+          ROLE_PRIORITY[a.role.kind] <= ROLE_PRIORITY[b.role.kind] ? [a, b] : [b, a];
+        const away = d < 0.01 ? { x: 0, y: 1 } : normalize(sub(mover.target, fixed.target));
+        mover.target = add(fixed.target, scale(away, min));
+        moved = true;
+      }
+    }
+
+    if (!moved) return;
+  }
+}
+
 export const put = (
   ctx: Ctx,
   position: Position,

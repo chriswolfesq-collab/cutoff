@@ -21,6 +21,10 @@ export type Role =
   | { kind: 'cover'; base: BaseId }
   | { kind: 'backupBase'; base: BaseId; on?: ThrowRef }
   | { kind: 'backupFielder'; fielder: Position }
+  /** Has the ball in a rundown, running the runner back toward `toward`. */
+  | { kind: 'chase'; toward: BaseId }
+  /** Threw it; now sprinting to the back of the line at `to`. */
+  | { kind: 'rotate'; to: BaseId }
   | { kind: 'watch' };
 
 export const ROLE_LABELS: Record<Role['kind'], string> = {
@@ -31,6 +35,8 @@ export const ROLE_LABELS: Record<Role['kind'], string> = {
   cover: 'Covers',
   backupBase: 'Backs up',
   backupFielder: 'Backs up',
+  chase: 'Runs him back',
+  rotate: 'Peels to the back of the line',
   watch: 'Reads the play',
 };
 
@@ -100,6 +106,28 @@ export type ResolvedPlay = {
   phases: PlayPhase[];
   /** Present when the throw was a read rather than a certainty. */
   branch?: { when: string; throws: ThrowRef[] };
+  /** Present when a throw could leave a runner hung up between two bases. */
+  rundown?: RundownPlay;
+};
+
+/**
+ * A rundown is not a position, it is a rotation: chase him back to the base he
+ * came from, make one throw, and get to the back of the line behind the man you
+ * threw to. So it carries a second set of assignments for after the throw —
+ * the only place in the engine where a fielder's job changes mid-play.
+ */
+export type RundownPlay = {
+  /** The base he is driven back toward, and the one he was going to. */
+  behind: BaseId;
+  ahead: BaseId;
+  runner: RunnerId;
+  /** One per fielder, as the rundown starts. */
+  assignments: Assignment[];
+  /** Overrides for the fielders whose job changes once the throw is made. */
+  afterThrow: Assignment[];
+  throw: ThrowRef;
+  phases: PlayPhase[];
+  notes: string[];
 };
 
 /**
@@ -125,5 +153,9 @@ export function roleKey(role: Role): string {
       return `relay:${role.on.to}`;
     case 'trail':
       return `trail:${role.behind}`;
+    case 'chase':
+      return `chase:${role.toward}`;
+    case 'rotate':
+      return `rotate:${role.to}`;
   }
 }

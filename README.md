@@ -6,6 +6,21 @@ fielders should be — who fields it, who covers, who cuts, who backs up.
 
 ## Status
 
+Rundowns. A throw to second, third or home can leave a runner hung up between
+that bag and the one behind it, and the play offers to follow it there.
+
+A rundown is not a set of positions, it is a rotation: drive him back toward the
+base he came from so that beating the tag gains him nothing, make one throw, and
+sprint to the back of the line behind the man you threw to. That last part is
+the only place in the engine where a fielder's job genuinely changes partway
+through a play — which is what the phase model was built for.
+
+Two things fall out of the model rather than being chosen. The man with the ball
+is whoever took the throw, so the chase starts from the right end without anyone
+saying so. And the runner who gets hung up is the *lead* runner heading for that
+bag, not whoever started on the base behind — a man scoring from second is
+caught between third and home, having never stopped at third.
+
 Conditional assignments. Some throws are not decided at contact — the defence
 does not know whether the man on first is going to third until he commits. Those
 plays resolve **twice**: the line the defence plays for, and the line it plays
@@ -54,7 +69,11 @@ Known gaps, all deliberate:
   third option, and the defence is always shown playing for him going.
 - **Nothing changes between *phases*.** A fielder's job can depend on the read,
   but not on where an earlier throw in the same play went.
-- **No rundowns, no first-and-third plays, no pickoffs.**
+- **No first-and-third plays, no pickoffs.** A rundown between home and first
+  is not offered either: it needs a dropped third strike or a misplayed bunt,
+  not a batted ball being fielded.
+- **A rundown is one throw.** The real thing can take three; the model shows the
+  mechanics you are trying to execute, not a simulation of failing to.
 - **The batter-runner is not tracked past his first destination** — nobody
   reacts to him taking an extra base while the throw is elsewhere.
 - **No secondary coverage.** On a ball to the right side the second baseman

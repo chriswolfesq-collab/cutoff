@@ -30,6 +30,8 @@ export type Scenario = {
   branchWhen?: string;
   /** Expected alternative role keys, by position. */
   alternatives?: Partial<Record<Position, string>>;
+  /** Expected rundown: which bases, who runs him back, who takes the throw. */
+  rundown?: { behind: string; ahead: string; runner: string; chaser: Position; receiver: Position };
   /** Role keys — see roleKey() in field/assignment.ts. */
   expect: Partial<Record<Position, string>>;
 };
@@ -373,6 +375,48 @@ export const CORPUS: Scenario[] = [
     outcome: 'toWall',
     throws: ['third'],
     expect: { CF: 'primary', SS: 'relay:third', '2B': 'trail:SS' },
+  },
+
+  // --- rundowns ------------------------------------------------------------
+  {
+    name: 'Man on first hung up between second and third',
+    situation: { runners: { first: true, second: false, third: false }, outs: 0 },
+    ball: 'fly',
+    at: { x: -84, y: 141 },
+    outcome: 'drops',
+    throws: ['third'],
+    rundown: {
+      behind: 'second', ahead: 'third', runner: 'first',
+      // The third baseman took the throw, so the ball is his to run back.
+      chaser: '3B', receiver: 'SS',
+    },
+    expect: { LF: 'primary', '3B': 'cover:third' },
+  },
+  {
+    name: 'Man scoring from second hung up between third and home',
+    situation: { runners: { first: false, second: true, third: false }, outs: 1 },
+    ball: 'fly',
+    at: { x: -84, y: 141 },
+    outcome: 'drops',
+    throws: ['home'],
+    rundown: {
+      // He never stopped at third, so that is the bag he is driven back to.
+      behind: 'third', ahead: 'home', runner: 'second',
+      chaser: 'C', receiver: '3B',
+    },
+    expect: { C: 'cover:home' },
+  },
+  {
+    name: 'Batter stretching a single, hung up between first and second',
+    ball: 'fly',
+    at: { x: -84, y: 141 },
+    outcome: 'drops',
+    throws: ['second'],
+    rundown: {
+      behind: 'first', ahead: 'second', runner: 'batter',
+      chaser: '2B', receiver: '1B',
+    },
+    expect: { '2B': 'cover:second' },
   },
 
   // --- adult field ---------------------------------------------------------

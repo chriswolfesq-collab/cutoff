@@ -39,6 +39,7 @@ export default function App() {
   const [answer, setAnswer] = useState<Position | null>(null);
   const [score, setScore] = useState<Score>({ right: 0, total: 0 });
   const [copied, setCopied] = useState(false);
+  const [inRundown, setInRundown] = useState(false);
   // Seeded when drill mode is entered rather than during render, so the clock
   // is read from an event and the sequence differs between sessions.
   const rng = useRef<() => number>(() => 0);
@@ -61,6 +62,13 @@ export default function App() {
       ? resolvePlay({ situation, ball, at: pick, outcome })
       : null;
 
+  /**
+   * A rundown is a separate state with its own two-phase rotation, so it takes
+   * over the field rather than being drawn on top of the batted-ball play.
+   */
+  const rundown = inRundown ? (play?.rundown ?? null) : null;
+  // phaseIndex is derived below; the rundown reads it once it exists.
+
   const sig =
     pick && outcome && plausible
       ? [
@@ -70,13 +78,22 @@ export default function App() {
         ].join('|')
       : '';
 
-  const lastPhase = play ? play.phases.length - 1 : 0;
+  const sequence = rundown ? rundown.phases : play?.phases;
+  const lastPhase = sequence ? sequence.length - 1 : 0;
   const current = scrub.sig === sig ? scrub : { sig, index: 1, playing: false };
   const phaseIndex = Math.min(current.index, lastPhase);
   // Playback stops on its own at the end; deriving it keeps the button honest
   // without writing state from inside the timer effect.
   const playing = current.playing && phaseIndex < lastPhase;
   const currentPhase = play?.phases[phaseIndex] ?? null;
+  const rundownPhase = rundown?.phases[phaseIndex] ?? null;
+
+  // The chaser's job changes once he throws — the one keyframe in the engine.
+  const rundownAssignments = rundown
+    ? phaseIndex >= 1
+      ? rundown.afterThrow
+      : rundown.assignments
+    : null;
 
   useEffect(() => {
     if (!playing) return;
@@ -107,6 +124,7 @@ export default function App() {
     setPick(p);
     setOutcome(null);
     setCopied(false);
+    setInRundown(false);
   };
 
   const nextDrill = () => {
@@ -210,9 +228,10 @@ export default function App() {
             level={situation.level}
             posture={situation.posture}
             showZones={showZones}
-            pick={shownPick}
+            pick={rundown ? null : shownPick}
             play={shownPlay}
-            phase={shownPhase}
+            phase={rundown ? rundownPhase : shownPhase}
+            override={rundownAssignments}
             highlight={highlight}
             onPick={mode === 'explore' ? choose : undefined}
             onHighlight={setHighlight}
@@ -230,11 +249,11 @@ export default function App() {
                 {playing ? '❚❚' : '▶'}
               </button>
               <div className="phases" role="group" aria-label="Play phase">
-                {play.phases.map((ph) => (
+                {(rundown ? rundown.phases : play.phases).map((ph) => (
                   <button
                     key={ph.index}
                     type="button"
-                    aria-pressed={currentPhase?.index === ph.index}
+                    aria-pressed={(rundown ? rundownPhase : currentPhase)?.index === ph.index}
                     onClick={() => setScrub({ sig, index: ph.index, playing: false })}
                   >
                     {ph.label}
@@ -303,7 +322,22 @@ export default function App() {
                   {play.notes.map((n) => (
                     <p key={n} className="note">{n}</p>
                   ))}
-                  {play.branch && (
+                  {play.rundown && (
+                    <button
+                      type="button"
+                      className="rundown-toggle"
+                      aria-pressed={inRundown}
+                      onClick={() => {
+                        setInRundown(!inRundown);
+                        setScrub({ sig, index: 0, playing: false });
+                      }}
+                    >
+                      {inRundown
+                        ? 'Back to the play'
+                        : `He's hung up between ${play.rundown.behind} and ${play.rundown.ahead}`}
+                    </button>
+                  )}
+                  {!inRundown && play.branch && (
                     <p className="note read">
                       {play.branch.when}, the throw goes{' '}
                       {play.branch.throws.length
@@ -312,8 +346,11 @@ export default function App() {
                       . Dashed markers show who moves.
                     </p>
                   )}
+                  {rundown?.notes.map((n) => (
+                    <p key={n} className="note">{n}</p>
+                  ))}
                   <ol className="assignments">
-                    {play.assignments.map((a) => (
+                    {(rundownAssignments ?? play.assignments).map((a) => (
                       <li
                         key={a.position}
                         className={`${ROLE_CLASS[a.role.kind]}${highlight === a.position ? ' hot' : ''}`}

@@ -13,5 +13,7 @@ export const ROLE_CLASS: Record<Role['kind'], string> = {
   cover: 'role-cover',
   backupBase: 'role-backup',
   backupFielder: 'role-backup',
+  chase: 'role-primary',
+  rotate: 'role-cut',
   watch: 'role-watch',
 };

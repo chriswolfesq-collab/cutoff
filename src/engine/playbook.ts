@@ -28,7 +28,7 @@ import {
   type Situation,
 } from '../field/play';
 import type { Position, Posture } from '../field/alignments';
-import { roleKey } from '../field/assignment';
+import { roleKey, type Assignment } from '../field/assignment';
 import { resolvePlay } from './resolve';
 import { BACKUP_ORDER } from './context';
 
@@ -316,6 +316,51 @@ function readsSection(): string {
   return out.join('\n');
 }
 
+/** Rundown assignments, per pair of bases. */
+function rundownSection(): string {
+  const cases: { over: Partial<Situation> }[] = [
+    { over: {} },
+    { over: { runners: { first: true, second: false, third: false }, outs: 0 } },
+    { over: { runners: { first: false, second: true, third: false }, outs: 1 } },
+  ];
+
+  const rows: string[] = [];
+
+  for (const c of cases) {
+    const play = run(HIT_TO('youth', -31), c.over);
+    const r = play.rundown;
+    if (!r) continue;
+
+    const who = (test: (a: Assignment) => boolean) =>
+      r.assignments.filter(test).map((a) => a.position).join(', ') || '—';
+
+    const chaser = who((a) => a.role.kind === 'chase');
+    const receiver = who((a) => a.role.kind === 'cover' && a.role.base === r.behind);
+    const backBehind = who(
+      (a) => a.role.kind === 'backupBase' && a.role.base === r.behind,
+    );
+    const backAhead = who((a) => a.role.kind === 'backupBase' && a.role.base === r.ahead);
+    const rotate = r.afterThrow
+      .filter((a) => a.role.kind === 'rotate')
+      .map((a) => `${a.position} → behind ${r.behind}`)
+      .join(', ');
+
+    rows.push(
+      `| ${BASE_LABEL[r.behind]} and ${BASE_LABEL[r.ahead]} | ${chaser} | ${receiver} | ${backBehind} | ${backAhead} | ${rotate} |`,
+    );
+  }
+
+  return [
+    'He is always driven back toward the base he came from, so that beating the',
+    'tag gains him nothing. One throw is the target; the man who makes it is out',
+    'of the play until he gets behind the man he threw to.',
+    '',
+    '| Between | Has the ball | Takes the throw | Behind the back bag | Behind the front bag | After the throw |',
+    '| --- | --- | --- | --- | --- | --- |',
+    ...rows,
+  ].join('\n');
+}
+
 function backupTable() {
   return [
     '| Base | Order of preference |',
@@ -364,14 +409,19 @@ only gets through one section, make it this one.
    (\`primary.shallow.air\`), at every depth in that band.
 10. **A ball on the ground within 16 feet of the mound is the pitcher's**
     (\`primary.comebacker\`), whatever sector it is in.
-11. **A read has exactly two lines** — the runner goes, or he holds. There is no
+11. **In a rundown the ball starts with whoever took the throw** — he is the
+    one who runs the man back, and after his throw he goes to the back of the
+    line at the bag he threw to (\`rundown.rotate\`). One throw is the target.
+12. **A read has exactly two lines** — the runner goes, or he holds. There is no
     third option, and the defence is always shown playing for the runner going.
     See Reads below.
 
 ## What is not modelled
 
-Rundowns, first-and-third plays, pickoffs, and the batter-runner taking an extra
-base while the throw is elsewhere.
+First-and-third plays, pickoffs, and the batter-runner taking an extra base
+while the throw is elsewhere. A rundown between home and first is not offered
+either — it needs a dropped third strike or a misplayed bunt, not a batted ball
+being fielded.
 `;
 
 export function buildPlaybook(): string {
@@ -414,6 +464,10 @@ export function buildPlaybook(): string {
     'and any fielder whose job differs between the two has to read the throw.',
     '',
     readsSection(),
+    '## Rundowns',
+    '',
+    rundownSection(),
+    '',
     '## Who covers first',
     '',
     coverFirstTable(),

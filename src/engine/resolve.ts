@@ -11,18 +11,14 @@
 import {
   FIELD_CONFIGS,
   along,
-  add,
   bases as baseCoords,
   dist,
-  normalize,
-  scale,
-  sub,
   type Point,
 } from '../field/geometry';
 import { alignment, POSITIONS, type Position } from '../field/alignments';
 import { classify, isInfieldBand } from '../field/zones';
 import { outfieldOwnerAt, primaryFor } from '../field/primary';
-import { roleKey, type Assignment, type ResolvedPlay, type Role } from '../field/assignment';
+import { roleKey, type Assignment, type ResolvedPlay } from '../field/assignment';
 import type { BaseId, PlayInput } from '../field/play';
 import {
   BACKUP_ORDER,
@@ -33,12 +29,14 @@ import {
   free,
   isOutfielder,
   put,
+  spaceOut,
   spotOf,
   type Ctx,
 } from './context';
 import { layerThrows } from './throws';
 import { layerCutoffRelay } from './cutoff';
 import { buildPhases } from './phases';
+import { buildRundown, rundownTarget } from './rundown';
 
 // --- layer 1: who has the ball -------------------------------------------
 
@@ -304,42 +302,8 @@ function layerRemainder(ctx: Ctx) {
   }
 }
 
-/**
- * Nine men resolved independently can land on top of each other — most often
- * when the ball is fielded right beside a bag. Rather than special-case every
- * such geometry, the least-committed man gives way: a fielder chasing the ball
- * or standing on a base holds his spot, a backup slides.
- */
-const ROLE_PRIORITY: Record<Role['kind'], number> = {
-  primary: 0, cover: 1, cutoff: 2, relay: 2, trail: 3, backupBase: 4, backupFielder: 5, watch: 6,
-};
-
 function layerSpacing(ctx: Ctx) {
-  const min = 10 * ctx.u;
-  const list = POSITIONS.map((p) => ctx.out.get(p)).filter(Boolean) as Assignment[];
-
-  // A nudge can create a fresh collision, so keep going until nothing moves.
-  for (let pass = 0; pass < 8; pass++) {
-    let moved = false;
-
-    for (let i = 0; i < list.length; i++) {
-      for (let j = i + 1; j < list.length; j++) {
-        const a = list[i];
-        const b = list[j];
-        const d = dist(a.target, b.target);
-        if (d >= min) continue;
-
-        const [fixed, mover] =
-          ROLE_PRIORITY[a.role.kind] <= ROLE_PRIORITY[b.role.kind] ? [a, b] : [b, a];
-        const away =
-          d < 0.01 ? { x: 0, y: 1 } : normalize(sub(mover.target, fixed.target));
-        mover.target = add(fixed.target, scale(away, min));
-        moved = true;
-      }
-    }
-
-    if (!moved) break;
-  }
+  spaceOut(POSITIONS.map((p) => ctx.out.get(p)).filter(Boolean) as Assignment[], 10 * ctx.u);
 }
 
 /** One pass of the layers, on whichever line of the throw plan was asked for. */
@@ -374,6 +338,15 @@ function resolveOnce(input: PlayInput, useBranch: boolean): Ctx {
 export function resolvePlay(input: PlayInput): ResolvedPlay {
   const main = resolveOnce(input, false);
   const assignments = POSITIONS.map((p) => main.out.get(p)!);
+  const cfg = FIELD_CONFIGS[input.situation.level];
+
+  /** Attach the rundown a throw could lead to, if any. */
+  const withRundown = (play: ResolvedPlay): ResolvedPlay => {
+    const target = rundownTarget(play);
+    if (!target) return play;
+    const rundown = buildRundown(play, input.situation, cfg, target);
+    return rundown ? { ...play, rundown } : play;
+  };
 
   if (main.branchWhen) {
     // Resolve the other line in full and diff it. Anything that moves or
@@ -396,21 +369,21 @@ export function resolvePlay(input: PlayInput): ResolvedPlay {
       a.alternative = { when, role: b.role, target: b.target, why: b.why, ruleId: b.ruleId };
     }
 
-    return {
+    return withRundown({
       assignments,
       throws: main.throws,
       notes: main.notes,
       ballAt: main.ball,
       phases: buildPhases(main),
       branch: { when, throws: alt.throws },
-    };
+    });
   }
 
-  return {
+  return withRundown({
     assignments,
     throws: main.throws,
     notes: main.notes,
     ballAt: main.ball,
     phases: buildPhases(main),
-  };
+  });
 }

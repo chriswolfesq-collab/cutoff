@@ -12,7 +12,7 @@ import {
   type Point,
 } from '../field/geometry';
 import { alignment, POSITIONS, POSITION_NUMBERS, type Position, type Posture } from '../field/alignments';
-import type { PlayPhase, ResolvedPlay } from '../field/assignment';
+import type { Assignment, PlayPhase, ResolvedPlay } from '../field/assignment';
 import { ROLE_CLASS } from './roleStyles';
 import ZoneOverlay from './ZoneOverlay';
 
@@ -48,6 +48,7 @@ export default function Field({
   pick,
   play,
   phase,
+  override,
   highlight,
   onPick,
   onHighlight,
@@ -59,6 +60,8 @@ export default function Field({
   pick?: Point | null;
   play?: ResolvedPlay | null;
   phase?: PlayPhase | null;
+  /** When set, these override the play's assignments (a rundown in progress). */
+  override?: Assignment[] | null;
   highlight?: Position | null;
   onPick?: (p: Point) => void;
   onHighlight?: (p: Position | null) => void;
@@ -88,7 +91,9 @@ export default function Field({
   const baseSize = 7 * unit;
   const r = 9 * unit;
 
-  const byPosition = new Map(play?.assignments.map((a) => [a.position, a]));
+  const byPosition = new Map(
+    (override ?? play?.assignments ?? []).map((a) => [a.position, a]),
+  );
   // At the set nothing has happened yet, so everyone is still where they lined
   // up — the movement only reads as movement if there is a before.
   const atSet = (phase?.index ?? 1) === 0;
@@ -152,12 +157,13 @@ export default function Field({
       <circle cx={0} cy={0} r={baseSize * 0.55} className="base" />
 
       {/* Where the ball crossed, if that is not where it gets fielded. */}
-      {play && pick && !atSet && dist(pick, play.ballAt) > 4 * unit && (
+      {play && !override && pick && !atSet && dist(pick, play.ballAt) > 4 * unit && (
         <path d={path([pick, play.ballAt])} className="ball-path" />
       )}
 
       {/* Routes: where each fielder is coming from. */}
       {play &&
+        !override &&
         !atSet &&
         play.assignments.map((a) => {
           const from = start[a.position];
@@ -192,6 +198,7 @@ export default function Field({
       {/* Where a fielder goes instead if the throw is read the other way.
           Hollow and dashed: this is a job he may not end up with. */}
       {play &&
+        !override &&
         !atSet &&
         play.assignments
           .filter((a) => a.alternative)

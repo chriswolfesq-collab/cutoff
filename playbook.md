@@ -34,14 +34,19 @@ only gets through one section, make it this one.
    (`primary.shallow.air`), at every depth in that band.
 10. **A ball on the ground within 16 feet of the mound is the pitcher's**
     (`primary.comebacker`), whatever sector it is in.
-11. **A read has exactly two lines** — the runner goes, or he holds. There is no
+11. **In a rundown the ball starts with whoever took the throw** — he is the
+    one who runs the man back, and after his throw he goes to the back of the
+    line at the bag he threw to (`rundown.rotate`). One throw is the target.
+12. **A read has exactly two lines** — the runner goes, or he holds. There is no
     third option, and the defence is always shown playing for the runner going.
     See Reads below.
 
 ## What is not modelled
 
-Rundowns, first-and-third plays, pickoffs, and the batter-runner taking an extra
-base while the throw is elsewhere.
+First-and-third plays, pickoffs, and the batter-runner taking an extra base
+while the throw is elsewhere. A rundown between home and first is not offered
+either — it needs a dropped third strike or a misplayed bunt, not a batted ball
+being fielded.
 
 ## Youth and Adult
 
@@ -194,6 +199,18 @@ Plays for a throw to **home**. If the lead runner holds at third — **3rd**.
 Plays for a throw to **home**. If he does not tag — **no throw**.
 
 Nobody picks up a different job — if the read goes the other way the play is simply over.
+
+## Rundowns
+
+He is always driven back toward the base he came from, so that beating the
+tag gains him nothing. One throw is the target; the man who makes it is out
+of the play until he gets behind the man he threw to.
+
+| Between | Has the ball | Takes the throw | Behind the back bag | Behind the front bag | After the throw |
+| --- | --- | --- | --- | --- | --- |
+| 1st and 2nd | 2B | 1B | RF | CF | 2B → behind first |
+| 2nd and 3rd | 3B | SS | CF | LF | 3B → behind second |
+| 3rd and home | C | 3B | LF | P | C → behind third |
 
 ## Who covers first
 
