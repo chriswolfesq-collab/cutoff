@@ -18,6 +18,7 @@ import {
   type DepthBand,
 } from '../field/zones';
 import { primaryFor } from '../field/primary';
+import { buildPickoff, PICKOFFS, type PickoffId } from './pickoff';
 import {
   buildFirstAndThird,
   CALL_NAMES,
@@ -366,6 +367,39 @@ function rundownSection(): string {
   ].join('\n');
 }
 
+/** Pickoff plays, and who is where before and after the throw. */
+function pickoffSection(): string {
+  const situation: Situation = {
+    ...DEFAULT_SITUATION,
+    runners: { first: true, second: true, third: true },
+    outs: 0,
+  };
+  const cfg = FIELD_CONFIGS.youth;
+
+  const rows = (Object.keys(PICKOFFS) as PickoffId[]).map((id) => {
+    const play = buildPickoff(situation, cfg, id);
+    const backup =
+      play.afterThrow.find((a) => a.role.kind === 'backupBase')?.position ?? '—';
+    const decoy = play.assignments.find((a) => a.ruleId === 'pickoff.decoy')?.position ?? '—';
+    const early =
+      play.assignments.find((a) => a.position === play.spec.cover)!.role.kind === 'cover'
+        ? 'yes'
+        : 'no';
+    return `| ${play.spec.name} | ${play.spec.from} | ${play.spec.cover} | ${backup} | ${decoy} | ${early} |`;
+  });
+
+  return [
+    'Two things are the same on every one of these. Nobody stands on the bag',
+    'before the throw is made, because that is what tells the runner it is',
+    'coming; and every throw is backed up, because one that gets away hands over',
+    'the base you were trying to take.',
+    '',
+    '| Play | Throws it | Covers | Backs up | Decoy | On the bag early |',
+    '| --- | --- | --- | --- | --- | --- |',
+    ...rows,
+  ].join('\n');
+}
+
 /** First-and-third calls, and who does what on each. */
 function firstThirdSection(): string {
   const situation: Situation = {
@@ -453,19 +487,23 @@ only gets through one section, make it this one.
 12. **The five first-and-third calls** (\`ft.*\`) are common ones, but this is
     the most system-dependent area in the game — a programme running different
     names and different responsibilities is not wrong. Check the whole section.
-13. **In a rundown the ball starts with whoever took the throw** — he is the
+13. **The two pickoffs at second differ only in which middle infielder goes**
+    (\`pickoff.cover.late\`) — shortstop for the daylight play, second baseman
+    for a timing play. Whether those are the right names for those two, and
+    whether the man who is not covering should be faking a break at all
+    (\`pickoff.decoy\`), is worth a look.
+14. **In a rundown the ball starts with whoever took the throw** — he is the
     one who runs the man back, and after his throw he goes to the back of the
     line at the bag he threw to (\`rundown.rotate\`). One throw is the target.
-14. **A read has exactly two lines** — the runner goes, or he holds. There is no
+15. **A read has exactly two lines** — the runner goes, or he holds. There is no
     third option, and the defence is always shown playing for the runner going.
     See Reads below.
 
 ## What is not modelled
 
-Pickoffs, and the batter-runner taking an extra base
-while the throw is elsewhere. A rundown between home and first is not offered
-either — it needs a dropped third strike or a misplayed bunt, not a batted ball
-being fielded.
+The batter-runner taking an extra base while the throw is elsewhere. A rundown
+between home and first is not offered either — it needs a dropped third strike
+or a misplayed bunt, not a batted ball being fielded.
 `;
 
 export function buildPlaybook(): string {
@@ -508,6 +546,10 @@ export function buildPlaybook(): string {
     'and any fielder whose job differs between the two has to read the throw.',
     '',
     readsSection(),
+    '## Pickoffs',
+    '',
+    pickoffSection(),
+    '',
     '## First and third',
     '',
     firstThirdSection(),

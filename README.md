@@ -6,6 +6,19 @@ fielders should be — who fields it, who covers, who cuts, who backs up.
 
 ## Status
 
+Pickoffs. With a runner anywhere, the play offers to go after him: six plays
+across the three bases, from the pitcher or from the catcher.
+
+Two things are the same on every one of them, and they are the whole reason the
+feature is worth having. **Nobody stands on the bag before the throw** — getting
+there early is what tells the runner it is coming, so the man covering is
+somewhere else at the first phase and arrives with the ball at the second. And
+**every throw is backed up**, because one that gets away hands over the base you
+were trying to take; at second it scores him.
+
+Pickoffs and first-and-third now share one entry strip — *no pitch put in play* —
+because they are the same kind of thing and only one of them can be live.
+
 First and third. With runners on first and third, the play offers a path with
 no batted ball at all: the runner on first goes, and the defence has to weigh an
 out at second against a run scoring from third.
@@ -91,7 +104,7 @@ Known gaps, all deliberate:
   third option, and the defence is always shown playing for him going.
 - **Nothing changes between *phases*.** A fielder's job can depend on the read,
   but not on where an earlier throw in the same play went.
-- **No pickoffs.** A rundown between home and first
+- A rundown between home and first
   is not offered either: it needs a dropped third strike or a misplayed bunt,
   not a batted ball being fielded.
 - **A rundown is one throw.** The real thing can take three; the model shows the

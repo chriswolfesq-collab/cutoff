@@ -42,19 +42,23 @@ only gets through one section, make it this one.
 12. **The five first-and-third calls** (`ft.*`) are common ones, but this is
     the most system-dependent area in the game — a programme running different
     names and different responsibilities is not wrong. Check the whole section.
-13. **In a rundown the ball starts with whoever took the throw** — he is the
+13. **The two pickoffs at second differ only in which middle infielder goes**
+    (`pickoff.cover.late`) — shortstop for the daylight play, second baseman
+    for a timing play. Whether those are the right names for those two, and
+    whether the man who is not covering should be faking a break at all
+    (`pickoff.decoy`), is worth a look.
+14. **In a rundown the ball starts with whoever took the throw** — he is the
     one who runs the man back, and after his throw he goes to the back of the
     line at the bag he threw to (`rundown.rotate`). One throw is the target.
-14. **A read has exactly two lines** — the runner goes, or he holds. There is no
+15. **A read has exactly two lines** — the runner goes, or he holds. There is no
     third option, and the defence is always shown playing for the runner going.
     See Reads below.
 
 ## What is not modelled
 
-Pickoffs, and the batter-runner taking an extra base
-while the throw is elsewhere. A rundown between home and first is not offered
-either — it needs a dropped third strike or a misplayed bunt, not a batted ball
-being fielded.
+The batter-runner taking an extra base while the throw is elsewhere. A rundown
+between home and first is not offered either — it needs a dropped third strike
+or a misplayed bunt, not a batted ball being fielded.
 
 ## Youth and Adult
 
@@ -207,6 +211,22 @@ Plays for a throw to **home**. If the lead runner holds at third — **3rd**.
 Plays for a throw to **home**. If he does not tag — **no throw**.
 
 Nobody picks up a different job — if the read goes the other way the play is simply over.
+
+## Pickoffs
+
+Two things are the same on every one of these. Nobody stands on the bag
+before the throw is made, because that is what tells the runner it is
+coming; and every throw is backed up, because one that gets away hands over
+the base you were trying to take.
+
+| Play | Throws it | Covers | Backs up | Decoy | On the bag early |
+| --- | --- | --- | --- | --- | --- |
+| Pitcher to first | P | 1B | RF | — | yes |
+| Catcher back-picks first | C | 1B | RF | — | no |
+| Pitcher to second, shortstop covers | P | SS | CF | 2B | no |
+| Pitcher to second, second baseman covers | P | 2B | CF | SS | no |
+| Pitcher to third | P | 3B | LF | — | no |
+| Catcher back-picks third | C | 3B | LF | — | no |
 
 ## First and third
 

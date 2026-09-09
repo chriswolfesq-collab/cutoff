@@ -13,6 +13,12 @@ import {
   type FirstThirdCall,
 } from './engine/firstAndThird';
 import { FIELD_CONFIGS } from './field/geometry';
+import {
+  availablePickoffs,
+  buildPickoff,
+  PICKOFFS,
+  type PickoffId,
+} from './engine/pickoff';
 import DrillPanel, { type Score } from './components/DrillPanel';
 import { decode, encode } from './urlState';
 import { ROLE_CLASS } from './components/roleStyles';
@@ -48,7 +54,9 @@ export default function App() {
   const [score, setScore] = useState<Score>({ right: 0, total: 0 });
   const [copied, setCopied] = useState(false);
   const [inRundown, setInRundown] = useState(false);
-  const [call, setCall] = useState<FirstThirdCall | null>(null);
+  const [special, setSpecial] = useState<
+    { kind: 'firstThird'; call: FirstThirdCall } | { kind: 'pickoff'; id: PickoffId } | null
+  >(null);
   // Seeded when drill mode is entered rather than during render, so the clock
   // is read from an event and the sequence differs between sessions.
   const rng = useRef<() => number>(() => 0);
@@ -79,12 +87,20 @@ export default function App() {
    * First and third is a play with no batted ball, so it takes over the field
    * the way a rundown does rather than being layered onto one.
    */
+  const cfg = FIELD_CONFIGS[situation.level];
+  const pickoffs = availablePickoffs(situation.runners);
+  const canFirstThird = situation.runners.first && situation.runners.third;
+
   const firstAndThird =
-    situation.runners.first && situation.runners.third && call
-      ? buildFirstAndThird(situation, FIELD_CONFIGS[situation.level], call)
+    special?.kind === 'firstThird' && canFirstThird
+      ? buildFirstAndThird(situation, cfg, special.call)
+      : null;
+  const pickoff =
+    special?.kind === 'pickoff' && pickoffs.includes(special.id)
+      ? buildPickoff(situation, cfg, special.id)
       : null;
 
-  const rundown = !firstAndThird && inRundown ? (play?.rundown ?? null) : null;
+  const rundown = !firstAndThird && !pickoff && inRundown ? (play?.rundown ?? null) : null;
   // phaseIndex is derived below; the rundown reads it once it exists.
 
   const sig =
@@ -96,12 +112,15 @@ export default function App() {
         ].join('|')
       : '';
   // Switching the call is a different sequence, so the scrubber starts over.
-  const scrubSig = `${sig}|${call ?? ''}`;
+  const scrubSig = `${sig}|${special ? `${special.kind}:${'call' in special ? special.call : special.id}` : ''}`;
 
-  const sequence = firstAndThird?.phases ?? (rundown ? rundown.phases : play?.phases);
+  const sequence =
+    firstAndThird?.phases ?? pickoff?.phases ?? (rundown ? rundown.phases : play?.phases);
   const lastPhase = sequence ? sequence.length - 1 : 0;
   const current =
-    scrub.sig === scrubSig ? scrub : { sig: scrubSig, index: firstAndThird ? 0 : 1, playing: false };
+    scrub.sig === scrubSig
+      ? scrub
+      : { sig: scrubSig, index: firstAndThird || pickoff ? 0 : 1, playing: false };
   const phaseIndex = Math.min(current.index, lastPhase);
   // Playback stops on its own at the end; deriving it keeps the button honest
   // without writing state from inside the timer effect.
@@ -109,6 +128,13 @@ export default function App() {
   const currentPhase = play?.phases[phaseIndex] ?? null;
   const rundownPhase = rundown?.phases[phaseIndex] ?? null;
   const ftPhase = firstAndThird?.phases[Math.min(phaseIndex, firstAndThird.phases.length - 1)] ?? null;
+  const pickoffPhase = pickoff?.phases[Math.min(phaseIndex, pickoff.phases.length - 1)] ?? null;
+  // The cover reaches the bag with the ball, not before it — the second stage.
+  const pickoffAssignments = pickoff
+    ? phaseIndex >= 1
+      ? pickoff.afterThrow
+      : pickoff.assignments
+    : null;
 
   // The chaser's job changes once he throws — the one keyframe in the engine.
   const rundownAssignments = rundown
@@ -244,28 +270,59 @@ export default function App() {
         </div>
       )}
 
-      {mode === 'explore' && situation.runners.first && situation.runners.third && (
-        <div className="first-third">
-          {!call ? (
-            <button type="button" className="ft-enter" onClick={() => setCall('through')}>
-              First and third — the runner on first goes &rarr;
-            </button>
+      {mode === 'explore' && (canFirstThird || pickoffs.length > 0) && (
+        <div className="special">
+          {!special ? (
+            <>
+              <span className="control-label">No pitch put in play</span>
+              {canFirstThird && (
+                <button
+                  type="button"
+                  className="special-enter"
+                  onClick={() => setSpecial({ kind: 'firstThird', call: 'through' })}
+                >
+                  First and third &mdash; the runner on first goes &rarr;
+                </button>
+              )}
+              {pickoffs.length > 0 && (
+                <button
+                  type="button"
+                  className="special-enter"
+                  onClick={() => setSpecial({ kind: 'pickoff', id: pickoffs[0] })}
+                >
+                  Pick him off &rarr;
+                </button>
+              )}
+            </>
           ) : (
             <>
-              <span className="control-label">The call</span>
-              <div className="segmented" role="group" aria-label="First and third call">
-                {FIRST_THIRD_CALLS.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    aria-pressed={call === c}
-                    onClick={() => setCall(c)}
-                  >
-                    {CALL_NAMES[c]}
-                  </button>
-                ))}
+              <span className="control-label">
+                {special.kind === 'firstThird' ? 'The call' : 'The play'}
+              </span>
+              <div className="segmented" role="group" aria-label="Called play">
+                {special.kind === 'firstThird'
+                  ? FIRST_THIRD_CALLS.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        aria-pressed={special.call === c}
+                        onClick={() => setSpecial({ kind: 'firstThird', call: c })}
+                      >
+                        {CALL_NAMES[c]}
+                      </button>
+                    ))
+                  : pickoffs.map((id) => (
+                      <button
+                        key={id}
+                        type="button"
+                        aria-pressed={special.id === id}
+                        onClick={() => setSpecial({ kind: 'pickoff', id })}
+                      >
+                        {PICKOFFS[id].name}
+                      </button>
+                    ))}
               </div>
-              <button type="button" className="link-button" onClick={() => setCall(null)}>
+              <button type="button" className="link-button" onClick={() => setSpecial(null)}>
                 Back to the batted ball
               </button>
             </>
@@ -279,17 +336,19 @@ export default function App() {
             level={situation.level}
             posture={situation.posture}
             showZones={showZones}
-            pick={rundown || firstAndThird ? null : shownPick}
-            play={firstAndThird ? null : shownPlay}
-            phase={firstAndThird ? ftPhase : rundown ? rundownPhase : shownPhase}
-            override={firstAndThird?.assignments ?? rundownAssignments}
+            pick={rundown || firstAndThird || pickoff ? null : shownPick}
+            play={firstAndThird || pickoff ? null : shownPlay}
+            phase={
+              firstAndThird ? ftPhase : pickoff ? pickoffPhase : rundown ? rundownPhase : shownPhase
+            }
+            override={firstAndThird?.assignments ?? pickoffAssignments ?? rundownAssignments}
             highlight={highlight}
             onPick={mode === 'explore' ? choose : undefined}
             onHighlight={setHighlight}
             onAnswer={drilling && !answer ? submitAnswer : undefined}
           />
 
-          {mode === 'explore' && (play || firstAndThird) && (
+          {mode === 'explore' && (play || firstAndThird || pickoff) && (
             <div className="scrubber">
               <button
                 type="button"
@@ -305,8 +364,13 @@ export default function App() {
                     key={ph.index}
                     type="button"
                     aria-pressed={
-                      (firstAndThird ? ftPhase : rundown ? rundownPhase : currentPhase)?.index ===
-                      ph.index
+                      (firstAndThird
+                        ? ftPhase
+                        : pickoff
+                          ? pickoffPhase
+                          : rundown
+                            ? rundownPhase
+                            : currentPhase)?.index === ph.index
                     }
                     onClick={() => setScrub({ sig: scrubSig, index: ph.index, playing: false })}
                   >
@@ -318,16 +382,20 @@ export default function App() {
           )}
         </div>
 
-        {firstAndThird ? (
+        {firstAndThird || pickoff ? (
           <aside className="panel">
-            <h2>{CALL_NAMES[firstAndThird.call]}</h2>
-            <p className="hint">{CALL_BLURB[firstAndThird.call]}</p>
+            <h2>
+              {firstAndThird ? CALL_NAMES[firstAndThird.call] : pickoff!.spec.name}
+            </h2>
+            <p className="hint">
+              {firstAndThird ? CALL_BLURB[firstAndThird.call] : pickoff!.spec.blurb}
+            </p>
             <div className="result">
-              {firstAndThird.notes.map((n) => (
+              {(firstAndThird?.notes ?? pickoff!.notes).map((n) => (
                 <p key={n} className="note">{n}</p>
               ))}
               <ol className="assignments">
-                {firstAndThird.assignments.map((a) => (
+                {(firstAndThird?.assignments ?? pickoffAssignments!).map((a) => (
                   <li
                     key={a.position}
                     className={`${ROLE_CLASS[a.role.kind]}${highlight === a.position ? ' hot' : ''}`}

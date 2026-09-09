@@ -615,7 +615,7 @@ button:focus-visible,
 
 /* --- first and third --- */
 
-.first-third {
+.special {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -627,7 +627,7 @@ button:focus-visible,
   background: var(--panel);
 }
 
-.ft-enter {
+.special-enter {
   border: 0;
   background: transparent;
   color: var(--r-primary);
@@ -639,7 +639,7 @@ button:focus-visible,
   text-align: left;
 }
 
-.ft-enter:hover { text-decoration: underline; }
+.special-enter:hover { text-decoration: underline; }
 
-.first-third .segmented button { font-size: 0.78rem; }
-.first-third .link-button { margin-left: auto; }
+.special .segmented button { font-size: 0.78rem; }
+.special .link-button { margin-left: auto; }
