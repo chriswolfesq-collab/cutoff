@@ -1,8 +1,13 @@
 # Cutoff
 
+**[Try it](https://chriswolfesq-collab.github.io/cutoff/)**
+
 Interactive baseball fielder-positioning diagrams. Pick a situation (runners,
 outs, level), say where the ball went and what happened, and see where all nine
 fielders should be — who fields it, who covers, who cuts, who backs up.
+
+Every scenario has its own link, so a play can be sent to somebody:
+[a single to left with a man on second](https://chriswolfesq-collab.github.io/cutoff/#lvl=youth&r=2&o=1&d=normal&bh=R&b=fly&x=-84&y=141&res=drops).
 
 ## Status
 
@@ -298,6 +303,9 @@ that review possible; it has not happened.
     npm run dev      # http://localhost:5174
     npm run build
     npm run lint
+
+Every push to `main` builds and publishes to GitHub Pages. The tests run first
+and a failure stops the deploy, so a broken invariant does not reach the site.
 
 ## Next
 
